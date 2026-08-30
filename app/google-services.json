@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1061404297645",
+    "project_id": "app-laboratorio-5300c",
+    "storage_bucket": "app-laboratorio-5300c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1061404297645:android:d737579854a6809846f924",
+        "android_client_info": {
+          "package_name": "com.example.applaboratorio"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBnZ0urbshaihrlWrHX2oNFUeoY5J7RZA4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
