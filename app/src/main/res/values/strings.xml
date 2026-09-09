@@ -1,3 +1,21 @@
 <resources>
     <string name="app_name">App Laboratorio</string>
+
+    <!-- Sign Up -->
+    <string name="sign_up_title">Sign Up</string>
+    <string name="hint_email">Email</string>
+    <string name="hint_password">Password</string>
+    <string name="hint_confirm_password">Confirm Password</string>
+    <string name="btn_sign_up">Sign Up</string>
+    <string name="go_to_sign_in">Ya tienes una cuenta? Inicia sesión</string>
+
+    <!-- Sign In -->
+    <string name="sign_in_title">Sign In</string>
+    <string name="btn_sign_in">Sign In</string>
+    <string name="go_to_sign_up">No tienes cuenta? Regístrate</string>
+
+    <!-- Home -->
+    <string name="welcome_message">¡Bienvenido!</string>
+    <string name="btn_logout">Cerrar Sesión</string>
+    <string name="btn_change_language">Cambiar idioma</string>
 </resources>
