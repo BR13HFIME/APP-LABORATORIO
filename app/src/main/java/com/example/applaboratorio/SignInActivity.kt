@@ -6,6 +6,7 @@ import android.widget.EditText
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import android.content.Context
 import android.content.Intent
 import com.google.firebase.auth.FirebaseAuth
 
@@ -15,7 +16,14 @@ class SignInActivity : AppCompatActivity() {
     private lateinit var etPassword: EditText
     private lateinit var btnSignIn: Button
     private lateinit var tvGoToSignUp: TextView
+    private lateinit var btnChangeLanguage: Button
     private lateinit var auth: FirebaseAuth
+
+    override fun attachBaseContext(newBase: Context) {
+        val language = LocaleHelper.getSavedLanguage(newBase)
+        LocaleHelper.setLocale(newBase, language)
+        super.attachBaseContext(newBase)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,6 +33,7 @@ class SignInActivity : AppCompatActivity() {
         etPassword = findViewById(R.id.etPassword)
         btnSignIn = findViewById(R.id.btnSignIn)
         tvGoToSignUp = findViewById(R.id.tvGoToSignUp)
+        btnChangeLanguage = findViewById(R.id.btnChangeLanguage)
 
         auth = FirebaseAuth.getInstance()
 
@@ -49,6 +58,13 @@ class SignInActivity : AppCompatActivity() {
         tvGoToSignUp.setOnClickListener {
             val intent = Intent(this, SignUpActivity::class.java)
             startActivity(intent)
+        }
+
+        btnChangeLanguage.setOnClickListener {
+            val currentLanguage = LocaleHelper.getSavedLanguage(this)
+            val newLanguage = if (currentLanguage == "es") "en" else "es"
+            LocaleHelper.setLocale(this, newLanguage)
+            recreate()
         }
     }
 }

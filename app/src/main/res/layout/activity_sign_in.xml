@@ -11,7 +11,7 @@
         android:id="@+id/tvTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Sign In"
+        android:text="@string/sign_in_title"
         android:textSize="28sp"
         android:textStyle="bold"
         android:layout_marginBottom="24dp"/>
@@ -21,7 +21,7 @@
         android:id="@+id/etEmail"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Email"
+        android:hint="@string/hint_email"
         android:inputType="textEmailAddress"
         android:layout_marginBottom="12dp"/>
 
@@ -30,7 +30,7 @@
         android:id="@+id/etPassword"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Password"
+        android:hint="@string/hint_password"
         android:inputType="textPassword"
         android:layout_marginBottom="20dp"/>
 
@@ -39,7 +39,7 @@
         android:id="@+id/btnSignIn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Sign In"
+        android:text="@string/btn_sign_in"
         android:backgroundTint="#F44336"
         android:textColor="#FFFFFF"
         android:layout_marginBottom="16dp"/>
@@ -49,8 +49,19 @@
         android:id="@+id/tvGoToSignUp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="No tienes cuenta? Regístrate"
+        android:text="@string/go_to_sign_up"
         android:textColor="#F44336"
         android:layout_gravity="center_horizontal"/>
+
+    <!-- Botón para cambiar idioma -->
+    <Button
+        android:id="@+id/btnChangeLanguage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/btn_change_language"
+        android:backgroundTint="#757575"
+        android:textColor="#FFFFFF"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="24dp"/>
 
 </LinearLayout>

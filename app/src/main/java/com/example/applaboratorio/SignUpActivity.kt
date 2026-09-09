@@ -6,6 +6,7 @@ import android.widget.EditText
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import android.content.Context
 import android.content.Intent
 import com.google.firebase.auth.FirebaseAuth
 
@@ -16,7 +17,14 @@ class SignUpActivity : AppCompatActivity() {
     private lateinit var etConfirmPassword: EditText
     private lateinit var btnSignUp: Button
     private lateinit var tvGoToSignIn: TextView
+    private lateinit var btnChangeLanguage: Button
     private lateinit var auth: FirebaseAuth
+
+    override fun attachBaseContext(newBase: Context) { // . Aquí leemos qué idioma había guardado el usuario (getSavedLanguage) y lo aplicamos (setLocale) antes de que Android empiece a "inflar" (dibujar) el layout
+        val language = LocaleHelper.getSavedLanguage(newBase)
+        LocaleHelper.setLocale(newBase, language)
+        super.attachBaseContext(newBase)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,6 +35,7 @@ class SignUpActivity : AppCompatActivity() {
         etConfirmPassword = findViewById(R.id.etConfirmPassword)
         btnSignUp = findViewById(R.id.btnSignUp)
         tvGoToSignIn = findViewById(R.id.tvGoToSignIn)
+        btnChangeLanguage = findViewById(R.id.btnChangeLanguage)
 
         auth = FirebaseAuth.getInstance()
 
@@ -58,10 +67,16 @@ class SignUpActivity : AppCompatActivity() {
                 }
         }
 
-
         tvGoToSignIn.setOnClickListener {
             val intent = Intent(this, SignInActivity::class.java)
             startActivity(intent)
+        }
+
+        btnChangeLanguage.setOnClickListener {
+            val currentLanguage = LocaleHelper.getSavedLanguage(this)
+            val newLanguage = if (currentLanguage == "es") "en" else "es"
+            LocaleHelper.setLocale(this, newLanguage)
+            recreate()
         }
     }
 }

@@ -6,41 +6,40 @@
     android:padding="24dp"
     android:gravity="center_vertical">
 
-    <!-- Título de la pantalla: TextView muestra texto no editable -->
-
-    <!-- Campo de correo: EditText es editable por el usuario -->
+    <!-- Título de la pantalla -->
     <TextView
         android:id="@+id/tvTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
-        android:text="Sign Up"
+        android:text="@string/sign_up_title"
         android:textSize="28sp"
         android:textStyle="bold" />
 
+    <!-- Campo de correo electrónico -->
     <EditText
         android:id="@+id/etEmail"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Email"
+        android:hint="@string/hint_email"
         android:inputType="textEmailAddress"
         android:layout_marginBottom="12dp"/>
 
-    <!-- Campo de contraseña: oculta texto, sin sugerencias de teclado -->
+    <!-- Campo de contraseña -->
     <EditText
         android:id="@+id/etPassword"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Password"
+        android:hint="@string/hint_password"
         android:inputType="textPassword"
         android:layout_marginBottom="12dp"/>
 
-    <!-- Campo de confirmar contraseña: ID distinto para comparar en Kotlin -->
+    <!-- Campo de confirmar contraseña -->
     <EditText
         android:id="@+id/etConfirmPassword"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Confirmar Password"
+        android:hint="@string/hint_confirm_password"
         android:inputType="textPassword"
         android:layout_marginBottom="20dp"/>
 
@@ -49,7 +48,7 @@
         android:id="@+id/btnSignUp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Sign Up"
+        android:text="@string/btn_sign_up"
         android:backgroundTint="#F44336"
         android:textColor="#FFFFFF"
         android:layout_marginBottom="16dp"/>
@@ -59,8 +58,19 @@
         android:id="@+id/tvGoToSignIn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Ya tienes una cuenta? Inicia sesión"
+        android:text="@string/go_to_sign_in"
         android:textColor="#F44336"
         android:layout_gravity="center_horizontal"/>
+
+    <!-- Botón para cambiar idioma -->
+    <Button
+        android:id="@+id/btnChangeLanguage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/btn_change_language"
+        android:backgroundTint="#757575"
+        android:textColor="#FFFFFF"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="24dp"/>
 
 </LinearLayout>
