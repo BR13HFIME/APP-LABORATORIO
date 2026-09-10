@@ -9,6 +9,7 @@ import android.widget.Toast
 import android.content.Context
 import android.content.Intent
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class SignInActivity : AppCompatActivity() {
 
@@ -18,6 +19,7 @@ class SignInActivity : AppCompatActivity() {
     private lateinit var tvGoToSignUp: TextView
     private lateinit var btnChangeLanguage: Button
     private lateinit var auth: FirebaseAuth
+    private lateinit var db: FirebaseFirestore
 
     override fun attachBaseContext(newBase: Context) {
         val language = LocaleHelper.getSavedLanguage(newBase)
@@ -36,6 +38,7 @@ class SignInActivity : AppCompatActivity() {
         btnChangeLanguage = findViewById(R.id.btnChangeLanguage)
 
         auth = FirebaseAuth.getInstance()
+        db = FirebaseFirestore.getInstance()
 
         btnSignIn.setOnClickListener {
             val email = etEmail.text.toString()
@@ -44,11 +47,21 @@ class SignInActivity : AppCompatActivity() {
             auth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
-                        Toast.makeText(this, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
+                        val uid = auth.currentUser?.uid
 
-                        val intent = Intent(this, HomeActivity::class.java)
-                        startActivity(intent)
-                        finish()
+                        if (uid != null) {
+                            db.collection("usuarios").document(uid).get()
+                                .addOnSuccessListener { document ->
+                                    val rol = document.getString("rol") ?: "usuario"
+
+                                    Toast.makeText(this, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
+
+                                    val intent = Intent(this, HomeActivity::class.java)
+                                    intent.putExtra("ROL_USUARIO", rol)
+                                    startActivity(intent)
+                                    finish()
+                                }
+                        }
                     } else {
                         Toast.makeText(this, "Error: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                     }

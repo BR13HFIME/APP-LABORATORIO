@@ -14,7 +14,18 @@
         android:text="@string/welcome_message"
         android:textSize="24sp"
         android:textStyle="bold"
-        android:layout_marginBottom="32dp"/>
+        android:layout_marginBottom="16dp"/>
+
+    <!-- Etiqueta de rol, visible solo para administradores -->
+    <TextView
+        android:id="@+id/tvAdminPanel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Panel de Administrador"
+        android:textColor="#F44336"
+        android:textStyle="bold"
+        android:layout_marginBottom="32dp"
+        android:visibility="gone"/>   <!--no se muestra ni ocupa espacio en la pantalla -->
 
     <!-- Botón para cerrar sesión -->
     <Button

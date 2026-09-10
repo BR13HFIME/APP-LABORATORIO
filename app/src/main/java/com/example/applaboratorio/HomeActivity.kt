@@ -3,13 +3,16 @@ package com.example.applaboratorio
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import android.content.Intent
+import android.view.View
 import com.google.firebase.auth.FirebaseAuth
 
 class HomeActivity : AppCompatActivity() {
 
     private lateinit var btnLogout: Button
+    private lateinit var tvAdminPanel: TextView
     private lateinit var auth: FirebaseAuth
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -17,15 +20,22 @@ class HomeActivity : AppCompatActivity() {
         setContentView(R.layout.activity_home)
 
         btnLogout = findViewById(R.id.btnLogout)
+        tvAdminPanel = findViewById(R.id.tvAdminPanel)
         auth = FirebaseAuth.getInstance()
 
+        val rol = intent.getStringExtra("ROL_USUARIO") ?: "usuario"
+
+        if (rol == "admin") {
+            tvAdminPanel.visibility = View.VISIBLE
+        }
+
         btnLogout.setOnClickListener {
-            auth.signOut()   // le dice a Firebase "cierra la sesión del usuario actual"
+            auth.signOut()
             Toast.makeText(this, "Sesión cerrada", Toast.LENGTH_SHORT).show()
 
-            val intent = Intent(this, SignInActivity::class.java) // Moverse entre pantallas
-            startActivity(intent)  // : ejecuta la navegación — abre la pantalla SignInActivity.
-            finish() // : cierra la Activity actual (HomeActivity)
+            val intent = Intent(this, SignInActivity::class.java)
+            startActivity(intent)
+            finish()
         }
     }
 }

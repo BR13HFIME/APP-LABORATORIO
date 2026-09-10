@@ -9,6 +9,7 @@ import android.widget.Toast
 import android.content.Context
 import android.content.Intent
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore  //Firestore
 
 class SignUpActivity : AppCompatActivity() {
 
@@ -19,8 +20,9 @@ class SignUpActivity : AppCompatActivity() {
     private lateinit var tvGoToSignIn: TextView
     private lateinit var btnChangeLanguage: Button
     private lateinit var auth: FirebaseAuth
+    private lateinit var db: FirebaseFirestore
 
-    override fun attachBaseContext(newBase: Context) { // . Aquí leemos qué idioma había guardado el usuario (getSavedLanguage) y lo aplicamos (setLocale) antes de que Android empiece a "inflar" (dibujar) el layout
+    override fun attachBaseContext(newBase: Context) {
         val language = LocaleHelper.getSavedLanguage(newBase)
         LocaleHelper.setLocale(newBase, language)
         super.attachBaseContext(newBase)
@@ -38,6 +40,7 @@ class SignUpActivity : AppCompatActivity() {
         btnChangeLanguage = findViewById(R.id.btnChangeLanguage)
 
         auth = FirebaseAuth.getInstance()
+        db = FirebaseFirestore.getInstance()
 
         btnSignUp.setOnClickListener {
             val email = etEmail.text.toString()
@@ -53,6 +56,17 @@ class SignUpActivity : AppCompatActivity() {
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
                         val user = auth.currentUser
+
+                        val userData = hashMapOf( //Armando el contenido del documento
+                            "email" to email,
+                            "rol" to "usuario"
+                        )
+
+                        user?.uid?.let { uid ->  //  identificador único que Firebase le asigna a cada usuario.
+                            db.collection("usuarios").document(uid)
+                                .set(userData)
+                        }
+
                         user?.sendEmailVerification()
                             ?.addOnCompleteListener { verificationTask ->
                                 if (verificationTask.isSuccessful) {
