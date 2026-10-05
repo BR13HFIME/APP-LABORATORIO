@@ -12,6 +12,7 @@ import com.google.firebase.auth.FirebaseAuth
 class HomeActivity : AppCompatActivity() {
 
     private lateinit var btnLogout: Button
+    private lateinit var btnChats: Button
     private lateinit var tvAdminPanel: TextView
     private lateinit var auth: FirebaseAuth
 
@@ -20,6 +21,7 @@ class HomeActivity : AppCompatActivity() {
         setContentView(R.layout.activity_home)
 
         btnLogout = findViewById(R.id.btnLogout)
+        btnChats = findViewById(R.id.btnChats)
         tvAdminPanel = findViewById(R.id.tvAdminPanel)
         auth = FirebaseAuth.getInstance()
 
@@ -27,6 +29,10 @@ class HomeActivity : AppCompatActivity() {
 
         if (rol == "admin") {
             tvAdminPanel.visibility = View.VISIBLE
+        }
+
+        btnChats.setOnClickListener {
+            startActivity(Intent(this, UserListActivity::class.java))
         }
 
         btnLogout.setOnClickListener {
