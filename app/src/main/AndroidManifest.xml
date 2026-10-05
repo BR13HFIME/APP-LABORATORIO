@@ -33,6 +33,14 @@
             android:name=".HomeActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".UserListActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ChatActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>

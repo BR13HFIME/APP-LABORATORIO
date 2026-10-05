@@ -6,7 +6,6 @@
     android:padding="24dp"
     android:gravity="center">
 
-    <!-- Mensaje de bienvenida -->
     <TextView
         android:id="@+id/tvWelcome"
         android:layout_width="wrap_content"
@@ -16,7 +15,6 @@
         android:textStyle="bold"
         android:layout_marginBottom="16dp"/>
 
-    <!-- Etiqueta de rol, visible solo para administradores -->
     <TextView
         android:id="@+id/tvAdminPanel"
         android:layout_width="wrap_content"
@@ -25,15 +23,23 @@
         android:textColor="#F44336"
         android:textStyle="bold"
         android:layout_marginBottom="32dp"
-        android:visibility="gone"/>   <!--no se muestra ni ocupa espacio en la pantalla -->
+        android:visibility="gone"/>
 
-    <!-- Botón para cerrar sesión -->
+    <Button
+        android:id="@+id/btnChats"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Chats"
+        android:backgroundTint="#F44336"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="16dp"/>
+
     <Button
         android:id="@+id/btnLogout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/btn_logout"
-        android:backgroundTint="#F44336"
+        android:backgroundTint="#757575"
         android:textColor="#FFFFFF"/>
 
 </LinearLayout>
