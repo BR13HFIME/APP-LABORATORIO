@@ -5,18 +5,18 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
-import org.jitsi.meet.sdk.JitsiMeetActivity
-import org.jitsi.meet.sdk.JitsiMeetConferenceOptions
-import org.jitsi.meet.sdk.JitsiMeetUserInfo
-import java.net.URL
+import com.google.firebase.firestore.SetOptions
 
 class ChatActivity : AppCompatActivity() {
 
@@ -25,10 +25,24 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var btnEnviar: Button
     private lateinit var btnVideollamada: Button
     private lateinit var tvChatWith: TextView
+    private lateinit var tvAvatarChat: TextView
+    private lateinit var ivAvatarChat: ImageView
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
     private lateinit var chatId: String
     private lateinit var otroUid: String
+    private lateinit var miUid: String
+
+    private var otroNombre = ""
+    private var miNombre = ""
+    private var enPantalla = false
+    private var mensajesActuales: List<DocumentSnapshot> = emptyList()
+    private val escuchas = mutableListOf<ListenerRegistration>()
+
+    // Seguimiento de la llamada que hicimos, para avisar si la rechazan o no contestan
+    private var escuchaLlamada: ListenerRegistration? = null
+    private var llamadaTimestamp = 0L
+    private var seFueALaLlamada = false
 
     private val permisosLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -39,7 +53,7 @@ class ChatActivity : AppCompatActivity() {
         if (camaraOk && audioOk) {
             iniciarVideollamada()
         } else {
-            Toast.makeText(this, "Se necesitan permisos de cámara y micrófono", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, R.string.permissions_needed, Toast.LENGTH_LONG).show()
         }
     }
 
@@ -55,24 +69,27 @@ class ChatActivity : AppCompatActivity() {
         btnEnviar = findViewById(R.id.btnEnviar)
         btnVideollamada = findViewById(R.id.btnVideollamada)
         tvChatWith = findViewById(R.id.tvChatWith)
+        tvAvatarChat = findViewById(R.id.tvAvatarChat)
+        ivAvatarChat = findViewById(R.id.ivAvatarChat)
 
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
 
-        val otroEmail = intent.getStringExtra("OTRO_EMAIL") ?: ""
+        miUid = auth.currentUser?.uid ?: ""
         otroUid = intent.getStringExtra("OTRO_UID") ?: ""
-        tvChatWith.text = otroEmail
+        otroNombre = intent.getStringExtra("OTRO_NOMBRE")
+            ?: intent.getStringExtra("OTRO_EMAIL")?.substringBefore('@')
+            ?: ""
+        miNombre = auth.currentUser?.email?.substringBefore('@') ?: "Usuario"
 
-        findViewById<TextView>(R.id.tvAvatarChat).text = otroEmail.take(1).uppercase().ifEmpty { "U" }
+        tvChatWith.text = otroNombre
+        Avatar.mostrar(tvAvatarChat, ivAvatarChat, otroNombre, "", colorear = false)
 
         findViewById<View>(R.id.btnAtras).setOnClickListener { finish() }
 
-        val miUid = auth.currentUser?.uid ?: ""
-        chatId = if (miUid < otroUid) "${miUid}_${otroUid}" else "${otroUid}_${miUid}"
+        chatId = Videollamada.chatIdEntre(miUid, otroUid)
 
         recyclerView.layoutManager = LinearLayoutManager(this).apply { stackFromEnd = true }
-
-        escucharMensajes()
 
         btnEnviar.setOnClickListener {
             enviarMensaje()
@@ -83,57 +100,140 @@ class ChatActivity : AppCompatActivity() {
                 arrayOf(android.Manifest.permission.CAMERA, android.Manifest.permission.RECORD_AUDIO)
             )
         }
+
+        cargarPerfiles()
+        escucharMensajes()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Volvimos de la videollamada: si el otro nunca contestó, dejamos de hacerlo sonar
+        if (seFueALaLlamada) {
+            seFueALaLlamada = false
+            cancelarLlamadaSinContestar()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        enPantalla = true
+        marcarComoLeidos()
+    }
+
+    override fun onPause() {
+        enPantalla = false
+        super.onPause()
+    }
+
+    override fun onStop() {
+        if (llamadaTimestamp != 0L) seFueALaLlamada = true
+        super.onStop()
+    }
+
+    override fun onDestroy() {
+        escuchas.forEach { it.remove() }
+        escuchaLlamada?.remove()
+        super.onDestroy()
+    }
+
+    private fun cargarPerfiles() {
+        if (otroUid.isNotEmpty()) {
+            escuchas += db.collection("usuarios").document(otroUid)
+                .addSnapshotListener { doc, _ ->
+                    if (doc == null || !doc.exists()) return@addSnapshotListener
+                    val otro = Usuario.desde(doc)
+                    otroNombre = otro.nombreVisible
+                    tvChatWith.text = otroNombre
+                    Avatar.mostrar(tvAvatarChat, ivAvatarChat, otroNombre, otro.foto, colorear = false)
+                }
+        }
+        if (miUid.isNotEmpty()) {
+            db.collection("usuarios").document(miUid).get()
+                .addOnSuccessListener { doc -> miNombre = Usuario.desde(doc).nombreVisible }
+        }
     }
 
     private fun iniciarVideollamada() {
-        val miUid = auth.currentUser?.uid ?: ""
         if (miUid.isEmpty() || otroUid.isEmpty()) {
-            Toast.makeText(this, "No se pudo iniciar la videollamada", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, R.string.call_failed, Toast.LENGTH_LONG).show()
             return
         }
 
-        // El servidor pide un nombre para entrar; usamos el correo del usuario
-        val userInfo = JitsiMeetUserInfo().apply {
-            displayName = auth.currentUser?.email ?: "Usuario"
+        val sala = Videollamada.salaPara(chatId)
+
+        // Hacemos sonar el teléfono del otro y dejamos constancia en el chat
+        llamadaTimestamp = Videollamada.llamar(otroUid, miNombre, sala)
+        seguirLlamada()
+        guardarMensaje(getString(R.string.chat_notice_call))
+
+        Videollamada.abrir(this, sala, miNombre)
+    }
+
+    private fun seguirLlamada() {
+        escuchaLlamada?.remove()
+        val timestampEsperado = llamadaTimestamp
+        escuchaLlamada = db.collection(Videollamada.COLECCION).document(otroUid)
+            .addSnapshotListener { doc, _ ->
+                if (doc == null || doc.getLong("timestamp") != timestampEsperado) return@addSnapshotListener
+                val aviso = when (doc.getString("estado")) {
+                    Videollamada.RECHAZADA -> getString(R.string.call_rejected, otroNombre)
+                    Videollamada.PERDIDA -> getString(R.string.call_missed, otroNombre)
+                    Videollamada.ACEPTADA -> ""
+                    else -> return@addSnapshotListener
+                }
+                if (aviso.isNotEmpty()) Toast.makeText(this, aviso, Toast.LENGTH_LONG).show()
+                escuchaLlamada?.remove()
+                escuchaLlamada = null
+                llamadaTimestamp = 0L
+            }
+    }
+
+    private fun cancelarLlamadaSinContestar() {
+        val timestampEsperado = llamadaTimestamp
+        if (timestampEsperado == 0L) return
+        val ref = db.collection(Videollamada.COLECCION).document(otroUid)
+        ref.get().addOnSuccessListener { doc ->
+            if (doc.getLong("timestamp") == timestampEsperado &&
+                doc.getString("estado") == Videollamada.SONANDO
+            ) {
+                ref.update("estado", Videollamada.PERDIDA)
+            }
         }
-
-        val options = JitsiMeetConferenceOptions.Builder()
-            .setServerURL(URL(SERVIDOR_JITSI))
-            .setRoom("AppLaboratorio_$chatId")
-            .setUserInfo(userInfo)
-            .setAudioMuted(false)
-            .setVideoMuted(false)
-            .setFeatureFlag("welcomepage.enabled", false)
-            .setFeatureFlag("prejoinpage.enabled", false)
-            .setFeatureFlag("lobby-mode.enabled", false)
-            .setFeatureFlag("invite.enabled", false)
-            .setFeatureFlag("add-people.enabled", false)
-            .setFeatureFlag("calendar.enabled", false)
-            .setFeatureFlag("call-integration.enabled", false)
-            .build()
-
-        // Avisamos al otro usuario por el chat para que se una a la misma sala
-        guardarMensaje("📹 Inicié una videollamada. Toca «Videollamada» para unirte.")
-
-        JitsiMeetActivity.launch(this, options)
     }
 
     private fun escucharMensajes() {
-        db.collection("chats").document(chatId).collection("mensajes")
+        escuchas += db.collection("chats").document(chatId).collection("mensajes")
             .orderBy("timestamp", Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) return@addSnapshotListener
 
-                val listaMensajes = mutableListOf<Mensaje>()
-                for (documento in snapshot) {
-                    val mensaje = documento.toObject(Mensaje::class.java)
-                    listaMensajes.add(mensaje)
-                }
+                mensajesActuales = snapshot.documents
+                val listaMensajes = snapshot.documents.mapNotNull { it.toObject(Mensaje::class.java) }
 
-                val miUid = auth.currentUser?.uid ?: ""
                 recyclerView.adapter = MensajeAdapter(listaMensajes, miUid)
                 recyclerView.scrollToPosition(listaMensajes.size - 1)
+
+                marcarComoLeidos()
             }
+    }
+
+    // Confirmación de lectura: lo que el otro nos mandó queda como leído al verlo
+    private fun marcarComoLeidos() {
+        if (!enPantalla || miUid.isEmpty()) return
+
+        val sinLeer = mensajesActuales.filter {
+            it.getString("emisorId") == otroUid && it.getBoolean("leido") != true
+        }
+        if (sinLeer.isEmpty()) return
+
+        val lote = db.batch()
+        sinLeer.forEach { lote.update(it.reference, "leido", true) }
+        lote.set(
+            db.collection("chats").document(chatId),
+            hashMapOf("ultimoLeido" to true),
+            SetOptions.merge()
+        )
+        lote.commit()
     }
 
     private fun enviarMensaje() {
@@ -146,22 +246,28 @@ class ChatActivity : AppCompatActivity() {
     }
 
     private fun guardarMensaje(texto: String) {
-        val miUid = auth.currentUser?.uid ?: ""
+        val ahora = System.currentTimeMillis()
 
         val mensaje = hashMapOf(
             "texto" to texto,
             "emisorId" to miUid,
-            "timestamp" to System.currentTimeMillis()
+            "timestamp" to ahora,
+            "leido" to false
         )
 
-        db.collection("chats").document(chatId).collection("mensajes")
-            .add(mensaje)
-    }
+        val chatRef = db.collection("chats").document(chatId)
+        chatRef.collection("mensajes").add(mensaje)
 
-    companion object {
-        // meet.jit.si ya no sirve desde apps: exige iniciar sesión con Google/GitHub
-        // para crear la sala y corta las llamadas embebidas a los 5 minutos.
-        // meet.ffmuc.net es un servidor Jitsi comunitario que permite salas anónimas.
-        private const val SERVIDOR_JITSI = "https://meet.ffmuc.net"
+        // Resumen para la lista de conversaciones (último mensaje, hora y si ya se leyó)
+        chatRef.set(
+            hashMapOf(
+                "participantes" to listOf(miUid, otroUid),
+                "ultimoMensaje" to texto,
+                "ultimoTimestamp" to ahora,
+                "ultimoEmisor" to miUid,
+                "ultimoLeido" to false
+            ),
+            SetOptions.merge()
+        )
     }
 }

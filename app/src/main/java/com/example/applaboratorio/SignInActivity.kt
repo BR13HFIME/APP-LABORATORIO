@@ -2,18 +2,24 @@ package com.example.applaboratorio
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Patterns
 import android.widget.EditText
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
+import android.text.InputType
 import android.view.View
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.FirebaseTooManyRequestsException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.firestore.FirebaseFirestore
 
 class SignInActivity : AppCompatActivity() {
@@ -26,14 +32,20 @@ class SignInActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
 
-    override fun attachBaseContext(newBase: Context) {
-        val language = LocaleHelper.getSavedLanguage(newBase)
-        LocaleHelper.setLocale(newBase, language)
-        super.attachBaseContext(newBase)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        auth = FirebaseAuth.getInstance()
+        db = FirebaseFirestore.getInstance()
+
+        // Sesión persistente: si ya había iniciado sesión, vamos directo al inicio
+        if (auth.currentUser != null) {
+            startActivity(Intent(this, HomeActivity::class.java))
+            finish()
+            return
+        }
+
+        LocaleHelper.sincronizar(this)
         activarBordeABorde()
         setContentView(R.layout.activity_sign_in)
         findViewById<View>(R.id.hero).dejarEspacioArriba()
@@ -45,31 +57,10 @@ class SignInActivity : AppCompatActivity() {
         tvGoToSignUp = findViewById(R.id.tvGoToSignUp)
         btnChangeLanguage = findViewById(R.id.btnChangeLanguage)
 
-        auth = FirebaseAuth.getInstance()
-        db = FirebaseFirestore.getInstance()
+        btnSignIn.setOnClickListener { iniciarSesion() }
 
-        btnSignIn.setOnClickListener {
-            val email = etEmail.text.toString().trim()
-            val password = etPassword.text.toString()
-
-            // Firebase lanza una excepción (y cierra la app) si recibe campos vacíos
-            if (email.isEmpty() || password.isEmpty()) {
-                Toast.makeText(this, "Escribe tu correo y tu contraseña", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            btnSignIn.isEnabled = false
-
-            auth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        val uid = auth.currentUser?.uid ?: ""
-                        cargarRolYEntrar(uid, email)
-                    } else {
-                        btnSignIn.isEnabled = true
-                        Toast.makeText(this, mensajeDeError(task.exception), Toast.LENGTH_LONG).show()
-                    }
-                }
+        findViewById<View>(R.id.tvForgotPassword).setOnClickListener {
+            mostrarRecuperarContrasena()
         }
 
         tvGoToSignUp.setOnClickListener {
@@ -78,18 +69,83 @@ class SignInActivity : AppCompatActivity() {
         }
 
         btnChangeLanguage.setOnClickListener {
-            val currentLanguage = LocaleHelper.getSavedLanguage(this)
-            val newLanguage = if (currentLanguage == "es") "en" else "es"
-            LocaleHelper.setLocale(this, newLanguage)
-            recreate()
+            LocaleHelper.alternarIdioma(this)
+        }
+    }
+
+    private fun iniciarSesion() {
+        val email = etEmail.text.toString().trim()
+        val password = etPassword.text.toString()
+
+        // Firebase lanza una excepción (y cierra la app) si recibe campos vacíos
+        if (email.isEmpty()) {
+            etEmail.error = getString(R.string.error_required)
+            etEmail.requestFocus()
+            return
+        }
+        if (password.isEmpty()) {
+            etPassword.error = getString(R.string.error_required)
+            etPassword.requestFocus()
+            return
+        }
+
+        btnSignIn.isEnabled = false
+
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val uid = auth.currentUser?.uid ?: ""
+                    cargarRolYEntrar(uid, email)
+                } else {
+                    btnSignIn.isEnabled = true
+                    Toast.makeText(this, mensajeDeError(this, task.exception), Toast.LENGTH_LONG).show()
+                }
+            }
+    }
+
+    private fun mostrarRecuperarContrasena() {
+        val campo = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+            hint = getString(R.string.hint_email)
+            setText(etEmail.text.toString().trim())
+        }
+        val margen = (24 * resources.displayMetrics.density).toInt()
+        val contenedor = FrameLayout(this).apply {
+            setPadding(margen, margen / 3, margen, 0)
+            addView(campo)
+        }
+
+        val dialogo = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.reset_title)
+            .setMessage(R.string.reset_message)
+            .setView(contenedor)
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.reset_send, null)
+            .show()
+
+        // Validamos antes de cerrar el diálogo
+        dialogo.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
+            val email = campo.text.toString().trim()
+            if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                campo.error = getString(R.string.error_email_invalid)
+                return@setOnClickListener
+            }
+            auth.sendPasswordResetEmail(email)
+                .addOnSuccessListener {
+                    Toast.makeText(this, R.string.reset_sent, Toast.LENGTH_LONG).show()
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, mensajeDeError(this, e), Toast.LENGTH_LONG).show()
+                }
+            dialogo.dismiss()
         }
     }
 
     private fun cargarRolYEntrar(uid: String, email: String) {
         db.collection("usuarios").document(uid).get()
             .addOnSuccessListener { document ->
-                // Cuentas creadas cuando la base bloqueaba escrituras quedaron sin documento;
-                // lo creamos para que el usuario aparezca en la lista de chats
+                // Cuentas que se quedaron sin documento de perfil: lo creamos para que
+                // el usuario aparezca en la lista de chats
                 if (!document.exists()) {
                     db.collection("usuarios").document(uid)
                         .set(hashMapOf("email" to email, "rol" to "usuario"))
@@ -97,19 +153,14 @@ class SignInActivity : AppCompatActivity() {
                 irAHome(document.getString("rol") ?: "usuario")
             }
             .addOnFailureListener {
-                // Antes la app se quedaba congelada aquí sin avisar. La sesión ya es válida,
-                // así que entramos como usuario normal aunque no se pueda leer el rol.
-                Toast.makeText(
-                    this,
-                    "No se pudo leer tu perfil (revisa las reglas de Firestore)",
-                    Toast.LENGTH_LONG
-                ).show()
+                // La sesión ya es válida: entramos como usuario normal aunque no se pueda leer el rol
+                Toast.makeText(this, R.string.error_profile_read, Toast.LENGTH_LONG).show()
                 irAHome("usuario")
             }
     }
 
     private fun irAHome(rol: String) {
-        Toast.makeText(this, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, R.string.sign_in_success, Toast.LENGTH_SHORT).show()
 
         val intent = Intent(this, HomeActivity::class.java)
         intent.putExtra("ROL_USUARIO", rol)
@@ -117,11 +168,15 @@ class SignInActivity : AppCompatActivity() {
         finish()
     }
 
-    private fun mensajeDeError(error: Exception?): String = when (error) {
-        is FirebaseAuthInvalidCredentialsException,
-        is FirebaseAuthInvalidUserException -> "Correo o contraseña incorrectos"
-        is FirebaseNetworkException -> "Sin conexión a internet"
-        is FirebaseTooManyRequestsException -> "Demasiados intentos. Espera un momento"
-        else -> "Error: ${error?.message}"
+    companion object {
+        // Traduce los errores de Firebase a mensajes entendibles (en el idioma de la app)
+        fun mensajeDeError(context: Context, error: Exception?): String = when (error) {
+            is FirebaseAuthUserCollisionException -> context.getString(R.string.error_email_in_use)
+            is FirebaseAuthInvalidCredentialsException,
+            is FirebaseAuthInvalidUserException -> context.getString(R.string.error_wrong_credentials)
+            is FirebaseNetworkException -> context.getString(R.string.error_no_internet)
+            is FirebaseTooManyRequestsException -> context.getString(R.string.error_too_many_requests)
+            else -> context.getString(R.string.error_generic, error?.localizedMessage ?: "")
+        }
     }
 }

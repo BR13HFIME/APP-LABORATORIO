@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -23,6 +24,7 @@ class MensajeAdapter(
     class MensajeViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvMessageText: TextView = view.findViewById(R.id.tvMessageText)
         val tvMessageTime: TextView = view.findViewById(R.id.tvMessageTime)
+        val tvCheck: TextView? = view.findViewById(R.id.tvCheck)   // solo en mis mensajes
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -49,6 +51,19 @@ class MensajeAdapter(
             holder.tvMessageTime.visibility = View.VISIBLE
         } else {
             holder.tvMessageTime.visibility = View.GONE
+        }
+
+        holder.tvCheck?.let { check ->
+            val contexto = check.context
+            if (mensaje.leido) {
+                check.text = "✓✓"
+                check.setTextColor(ContextCompat.getColor(contexto, R.color.check_read))
+                check.contentDescription = contexto.getString(R.string.chat_seen)
+            } else {
+                check.text = "✓"
+                check.setTextColor(ContextCompat.getColor(contexto, R.color.text_secondary))
+                check.contentDescription = null
+            }
         }
     }
 

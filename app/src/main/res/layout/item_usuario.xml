@@ -22,17 +22,32 @@
         android:orientation="horizontal"
         android:padding="14dp">
 
-        <!-- Avatar circular (placeholder con inicial) -->
-        <TextView
-            android:id="@+id/tvAvatar"
+        <!-- Avatar: foto de perfil o, si no tiene, la inicial sobre su color -->
+        <FrameLayout
             android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:background="@drawable/circle_avatar"
-            android:gravity="center"
-            android:text="U"
-            android:textColor="#FFFFFF"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+            android:layout_height="52dp">
+
+            <TextView
+                android:id="@+id/tvAvatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/circle_avatar"
+                android:gravity="center"
+                android:text="U"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/ivAvatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/circle_avatar"
+                android:clipToOutline="true"
+                android:contentDescription="@string/cd_profile_photo"
+                android:scaleType="centerCrop"
+                android:visibility="gone" />
+        </FrameLayout>
 
         <LinearLayout
             android:layout_width="0dp"
@@ -41,39 +56,68 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <!-- Nombre / correo del usuario -->
             <TextView
-                android:id="@+id/tvUserEmail"
+                android:id="@+id/tvNombre"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="usuario@ejemplo.com"
+                android:text="Usuario"
                 android:textColor="@color/text_primary"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
+            <!-- Último mensaje (o una pista si aún no han hablado) -->
             <TextView
+                android:id="@+id/tvUltimoMensaje"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:text="@string/user_item_hint"
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
         </LinearLayout>
 
-        <FrameLayout
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@drawable/bg_icon_soft">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:gravity="end|center_vertical"
+            android:minWidth="40dp"
+            android:orientation="vertical">
 
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_gravity="center"
-                android:importantForAccessibility="no"
-                android:src="@drawable/ic_chat"
-                app:tint="@color/brand_primary" />
-        </FrameLayout>
+            <TextView
+                android:id="@+id/tvHora"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+
+            <!-- Punto de mensaje sin leer -->
+            <View
+                android:id="@+id/vNoLeido"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_unread_dot"
+                android:visibility="gone" />
+
+            <FrameLayout
+                android:id="@+id/iconoChat"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_icon_soft">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_chat"
+                    app:tint="@color/brand_primary" />
+            </FrameLayout>
+        </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

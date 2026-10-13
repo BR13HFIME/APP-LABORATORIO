@@ -38,4 +38,62 @@
     <string name="cd_back">Atrás</string>
     <string name="cd_video_call">Iniciar videollamada</string>
     <string name="cd_send">Enviar</string>
+
+    <!-- Validación y sesión -->
+    <string name="hint_name">Nombre</string>
+    <string name="error_required">Este campo es obligatorio</string>
+    <string name="error_email_invalid">Escribe un correo válido</string>
+    <string name="error_password_short">Mínimo 6 caracteres</string>
+    <string name="error_passwords_mismatch">Las contraseñas no coinciden</string>
+    <string name="error_wrong_credentials">Correo o contraseña incorrectos</string>
+    <string name="error_email_in_use">Ese correo ya está registrado</string>
+    <string name="error_no_internet">Sin conexión a internet</string>
+    <string name="error_too_many_requests">Demasiados intentos. Espera un momento</string>
+    <string name="error_generic">Algo salió mal: %1$s</string>
+    <string name="error_profile_read">No se pudo leer tu perfil</string>
+    <string name="sign_in_success">Inicio de sesión exitoso</string>
+    <string name="sign_up_success">Cuenta creada. Te enviamos un correo para verificarla</string>
+    <string name="logout_done">Sesión cerrada</string>
+
+    <!-- Recuperar contraseña -->
+    <string name="forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="reset_title">Recuperar contraseña</string>
+    <string name="reset_message">Te enviaremos un enlace a tu correo para crear una nueva contraseña.</string>
+    <string name="reset_send">Enviar enlace</string>
+    <string name="reset_sent">Listo. Revisa tu correo (también la carpeta de spam)</string>
+    <string name="cancel">Cancelar</string>
+
+    <!-- Inicio -->
+    <string name="hello_name">¡Hola, %1$s!</string>
+    <string name="home_profile_title">Mi perfil</string>
+    <string name="home_profile_desc">Cambia tu nombre y tu foto</string>
+
+    <!-- Perfil -->
+    <string name="profile_title">Mi perfil</string>
+    <string name="profile_subtitle">Así te ven tus contactos</string>
+    <string name="profile_change_photo">Cambiar foto</string>
+    <string name="profile_remove_photo">Quitar foto</string>
+    <string name="profile_save">Guardar cambios</string>
+    <string name="profile_saved">Perfil actualizado</string>
+    <string name="profile_photo_error">No se pudo cargar esa imagen</string>
+    <string name="cd_profile_photo">Foto de perfil</string>
+
+    <!-- Conversaciones -->
+    <string name="you_prefix">Tú: %1$s</string>
+    <string name="yesterday">Ayer</string>
+    <string name="users_load_error">No se pudieron cargar los contactos</string>
+    <string name="search_hint">Buscar contacto…</string>
+
+    <!-- Chat -->
+    <string name="chat_notice_call">📹 Inicié una videollamada</string>
+    <string name="chat_seen">Visto</string>
+    <string name="permissions_needed">Se necesitan permisos de cámara y micrófono</string>
+    <string name="call_failed">No se pudo iniciar la videollamada</string>
+    <string name="call_rejected">%1$s rechazó la llamada</string>
+    <string name="call_missed">%1$s no contestó</string>
+
+    <!-- Llamada entrante -->
+    <string name="incoming_call">Videollamada entrante…</string>
+    <string name="incoming_accept">Contestar</string>
+    <string name="incoming_reject">Rechazar</string>
 </resources>

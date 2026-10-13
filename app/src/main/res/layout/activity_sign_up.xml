@@ -107,6 +107,22 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="14sp" />
 
+                <!-- Campo de nombre (así lo verán sus contactos) -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="14dp"
+                    android:hint="@string/hint_name"
+                    app:startIconDrawable="@drawable/ic_person">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etNombre"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPersonName|textCapWords"
+                        android:maxLength="40" />
+                </com.google.android.material.textfield.TextInputLayout>
+
                 <!-- Campo de correo electrónico -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"

@@ -39,4 +39,62 @@
     <string name="cd_back">Back</string>
     <string name="cd_video_call">Start video call</string>
     <string name="cd_send">Send</string>
+
+    <!-- Validation and session -->
+    <string name="hint_name">Name</string>
+    <string name="error_required">This field is required</string>
+    <string name="error_email_invalid">Enter a valid email</string>
+    <string name="error_password_short">At least 6 characters</string>
+    <string name="error_passwords_mismatch">Passwords do not match</string>
+    <string name="error_wrong_credentials">Wrong email or password</string>
+    <string name="error_email_in_use">That email is already registered</string>
+    <string name="error_no_internet">No internet connection</string>
+    <string name="error_too_many_requests">Too many attempts. Please wait a moment</string>
+    <string name="error_generic">Something went wrong: %1$s</string>
+    <string name="error_profile_read">Could not read your profile</string>
+    <string name="sign_in_success">Signed in successfully</string>
+    <string name="sign_up_success">Account created. We sent you a verification email</string>
+    <string name="logout_done">Signed out</string>
+
+    <!-- Reset password -->
+    <string name="forgot_password">Forgot your password?</string>
+    <string name="reset_title">Reset password</string>
+    <string name="reset_message">We will email you a link to create a new password.</string>
+    <string name="reset_send">Send link</string>
+    <string name="reset_sent">Done. Check your inbox (and the spam folder)</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- Home -->
+    <string name="hello_name">Hi, %1$s!</string>
+    <string name="home_profile_title">My profile</string>
+    <string name="home_profile_desc">Change your name and photo</string>
+
+    <!-- Profile -->
+    <string name="profile_title">My profile</string>
+    <string name="profile_subtitle">This is how your contacts see you</string>
+    <string name="profile_change_photo">Change photo</string>
+    <string name="profile_remove_photo">Remove photo</string>
+    <string name="profile_save">Save changes</string>
+    <string name="profile_saved">Profile updated</string>
+    <string name="profile_photo_error">Could not load that image</string>
+    <string name="cd_profile_photo">Profile photo</string>
+
+    <!-- Conversations -->
+    <string name="you_prefix">You: %1$s</string>
+    <string name="yesterday">Yesterday</string>
+    <string name="users_load_error">Could not load your contacts</string>
+    <string name="search_hint">Search contact…</string>
+
+    <!-- Chat -->
+    <string name="chat_notice_call">📹 I started a video call</string>
+    <string name="chat_seen">Seen</string>
+    <string name="permissions_needed">Camera and microphone permissions are required</string>
+    <string name="call_failed">Could not start the video call</string>
+    <string name="call_rejected">%1$s declined the call</string>
+    <string name="call_missed">%1$s did not answer</string>
+
+    <!-- Incoming call -->
+    <string name="incoming_call">Incoming video call…</string>
+    <string name="incoming_accept">Answer</string>
+    <string name="incoming_reject">Decline</string>
 </resources>
