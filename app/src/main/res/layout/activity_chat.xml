@@ -1,35 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/chat_bg"
     android:orientation="vertical">
 
-    <!-- Barra superior con el nombre del contacto y botón de videollamada -->
+    <!-- Barra superior con el contacto y botón de videollamada -->
     <LinearLayout
+        android:id="@+id/header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@drawable/bg_gradient_brand"
+        android:elevation="4dp"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="16dp"
-        android:background="#F44336"
-        android:gravity="center_vertical">
+        android:paddingStart="4dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="10dp">
+
+        <ImageButton
+            android:id="@+id/btnAtras"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/cd_back"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/on_brand" />
 
         <TextView
-            android:id="@+id/tvChatWith"
+            android:id="@+id/tvAvatarChat"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/bg_circle_glass"
+            android:gravity="center"
+            android:text="U"
+            android:textColor="@color/on_brand"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
             android:layout_weight="1"
-            android:text="Chat"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="#FFFFFF"/>
+            android:orientation="vertical">
 
-        <Button
+            <TextView
+                android:id="@+id/tvChatWith"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Chat"
+                android:textColor="@color/on_brand"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/chat_subtitle"
+                android:textColor="@color/on_brand_muted"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnVideollamada"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Videollamada"
-            android:backgroundTint="#FFFFFF"
-            android:textColor="#F44336"/>
+            style="@style/Widget.Material3.Button.IconButton.Filled"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="@string/cd_video_call"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            app:backgroundTint="@color/glass_white"
+            app:cornerRadius="24dp"
+            app:icon="@drawable/ic_videocam"
+            app:iconSize="24dp"
+            app:iconTint="@color/on_brand" />
 
     </LinearLayout>
 
@@ -38,31 +90,62 @@
         android:id="@+id/rvMensajes"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingTop="12dp"
+        android:paddingBottom="8dp" />
 
     <!-- Barra inferior: campo de texto + botón enviar -->
     <LinearLayout
+        android:id="@+id/bottomBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@drawable/bg_bottom_bar"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="8dp"
-        android:gravity="center_vertical">
+        android:paddingStart="12dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="10dp">
 
         <EditText
             android:id="@+id/etMensaje"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="Escribe un mensaje..."/>
+            android:background="@drawable/bg_input_pill"
+            android:hint="@string/chat_hint"
+            android:importantForAutofill="no"
+            android:inputType="textMultiLine|textCapSentences"
+            android:maxLines="4"
+            android:minHeight="52dp"
+            android:paddingStart="20dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="12dp"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_secondary"
+            android:textSize="15sp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnEnviar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Enviar"
-            android:backgroundTint="#F44336"
-            android:textColor="#FFFFFF"
-            android:layout_marginStart="8dp"/>
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginStart="10dp"
+            android:background="@drawable/bg_circle_gradient"
+            android:contentDescription="@string/cd_send"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            android:padding="0dp"
+            android:stateListAnimator="@null"
+            app:backgroundTint="@null"
+            app:icon="@drawable/ic_send"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            app:iconSize="22dp"
+            app:iconTint="@color/on_brand" />
 
     </LinearLayout>
 

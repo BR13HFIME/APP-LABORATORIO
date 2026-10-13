@@ -1,9 +1,78 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.AppLaboratorio" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">@color/brand_primary</item>
+        <item name="colorOnPrimary">@color/on_brand</item>
+        <item name="colorPrimaryContainer">@color/brand_soft</item>
+        <item name="colorOnPrimaryContainer">@color/brand_primary_dark</item>
+        <item name="colorSecondary">@color/brand_start</item>
+        <item name="colorOnSecondary">@color/on_brand</item>
+        <item name="colorError">@color/danger</item>
+        <item name="android:colorBackground">@color/app_bg</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
+        <item name="colorOutline">@color/outline</item>
+        <item name="android:windowBackground">@color/app_bg</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <!-- Las cabeceras usan el degradado de marca: iconos claros arriba -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="textInputStyle">@style/Widget.AppLaboratorio.TextInput</item>
+        <!-- Tarjetas blancas limpias, sin el tinte rosado de Material 3 -->
+        <item name="elevationOverlayEnabled">false</item>
     </style>
 
     <style name="Theme.AppLaboratorio" parent="Base.Theme.AppLaboratorio" />
+
+    <!-- Campos de texto redondeados -->
+    <style name="Widget.AppLaboratorio.TextInput" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">16dp</item>
+        <item name="boxCornerRadiusTopEnd">16dp</item>
+        <item name="boxCornerRadiusBottomStart">16dp</item>
+        <item name="boxCornerRadiusBottomEnd">16dp</item>
+        <item name="boxStrokeColor">@color/brand_primary</item>
+        <item name="startIconTint">@color/brand_primary</item>
+        <item name="hintTextColor">@color/brand_primary</item>
+    </style>
+
+    <!-- Botón principal con degradado -->
+    <style name="Widget.AppLaboratorio.Button.Gradient" parent="Widget.Material3.Button">
+        <item name="android:background">@drawable/bg_button_gradient</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:textColor">@color/on_brand</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="android:minHeight">56dp</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+    </style>
+
+    <!-- Botón secundario con borde -->
+    <style name="Widget.AppLaboratorio.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:minHeight">56dp</item>
+        <item name="cornerRadius">18dp</item>
+        <item name="android:textSize">16sp</item>
+        <item name="strokeColor">@color/outline</item>
+    </style>
+
+    <!-- Botón de idioma sobre el degradado -->
+    <style name="Widget.AppLaboratorio.Button.Glass" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">@color/on_brand</item>
+        <item name="backgroundTint">@color/glass_white</item>
+        <item name="cornerRadius">20dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:minHeight">40dp</item>
+        <item name="iconTint">@color/on_brand</item>
+    </style>
+
+    <style name="TextAppearance.AppLaboratorio.Headline" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">-0.01</item>
+    </style>
 </resources>

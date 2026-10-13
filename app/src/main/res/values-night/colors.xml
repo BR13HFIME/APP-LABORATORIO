@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand_soft">#4A1F2C</color>
+
+    <color name="app_bg">#141114</color>
+    <color name="surface">#1F1B1E</color>
+    <color name="text_primary">#F4EEF1</color>
+    <color name="text_secondary">#B3A9AF</color>
+    <color name="outline">#3A3237</color>
+    <color name="chat_bg">#171316</color>
+    <color name="bubble_other">#2A2428</color>
+    <color name="input_bg">#2A2428</color>
+    <color name="danger">#FF7070</color>
+
+    <color name="accent_violet">#B39DFF</color>
+    <color name="accent_violet_soft">#2E2547</color>
+</resources>
