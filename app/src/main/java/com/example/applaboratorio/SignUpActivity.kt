@@ -8,6 +8,7 @@ import android.widget.TextView
 import android.widget.Toast
 import android.content.Context
 import android.content.Intent
+import android.view.View
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore  //Firestore
 
@@ -30,7 +31,10 @@ class SignUpActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        activarBordeABorde()
         setContentView(R.layout.activity_sign_up)
+        findViewById<View>(R.id.hero).dejarEspacioArriba()
+        findViewById<View>(R.id.scrollRoot).dejarEspacioAbajo()
 
         etEmail = findViewById(R.id.etEmail)
         etPassword = findViewById(R.id.etPassword)

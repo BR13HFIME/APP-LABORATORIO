@@ -19,4 +19,24 @@
     <string name="welcome_message">Welcome!</string>
     <string name="btn_logout">Log Out</string>
     <string name="btn_change_language">Change Language</string>
+
+    <!-- Diseño -->
+    <string name="app_tagline">Chat and video call instantly</string>
+    <string name="sign_in_subtitle">Good to see you again</string>
+    <string name="sign_up_subtitle">Create your account in seconds</string>
+    <string name="home_section_title">What would you like to do today?</string>
+    <string name="home_chats_title">Messages</string>
+    <string name="home_chats_desc">Chat in real time with your contacts</string>
+    <string name="home_video_title">Video calls</string>
+    <string name="home_video_desc">Open a chat and tap the camera to call</string>
+    <string name="admin_badge">Administrator</string>
+    <string name="users_title">Chats</string>
+    <string name="users_subtitle">Choose who you want to talk to</string>
+    <string name="users_empty">There are no other users yet</string>
+    <string name="user_item_hint">Tap to chat or video call</string>
+    <string name="chat_subtitle">Private chat</string>
+    <string name="chat_hint">Type a message…</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_video_call">Start video call</string>
+    <string name="cd_send">Send</string>
 </resources>

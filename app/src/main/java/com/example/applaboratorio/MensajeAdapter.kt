@@ -5,6 +5,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MensajeAdapter(
     private val listaMensajes: List<Mensaje>,
@@ -14,10 +17,12 @@ class MensajeAdapter(
     companion object {
         private const val TIPO_MIO = 1
         private const val TIPO_OTRO = 2
+        private val formatoHora = SimpleDateFormat("HH:mm", Locale.getDefault())
     }
 
     class MensajeViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvMessageText: TextView = view.findViewById(R.id.tvMessageText)
+        val tvMessageTime: TextView = view.findViewById(R.id.tvMessageTime)
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -37,7 +42,14 @@ class MensajeAdapter(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val mensaje = listaMensajes[position]
-        (holder as MensajeViewHolder).tvMessageText.text = mensaje.texto
+        holder as MensajeViewHolder
+        holder.tvMessageText.text = mensaje.texto
+        if (mensaje.timestamp > 0) {
+            holder.tvMessageTime.text = formatoHora.format(Date(mensaje.timestamp))
+            holder.tvMessageTime.visibility = View.VISIBLE
+        } else {
+            holder.tvMessageTime.visibility = View.GONE
+        }
     }
 
     override fun getItemCount(): Int = listaMensajes.size

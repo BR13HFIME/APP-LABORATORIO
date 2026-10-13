@@ -26,6 +26,7 @@ class UsuarioAdapter(
         val usuario = listaUsuarios[position]
         holder.tvUserEmail.text = usuario.email
         holder.tvAvatar.text = usuario.email.take(1).uppercase()
+        holder.tvAvatar.background.mutate().setTint(AvatarColores.para(usuario.email))
 
         holder.itemView.setOnClickListener {
             onUsuarioClick(usuario)
