@@ -11,7 +11,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.applaboratorio"
+        applicationId = "com.br13h.famessage"
         minSdk = 26
         targetSdk = 37
         versionCode = 1

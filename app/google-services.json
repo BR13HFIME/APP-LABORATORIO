@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "1061404297645",
-    "project_id": "app-laboratorio-5300c",
-    "storage_bucket": "app-laboratorio-5300c.firebasestorage.app"
+    "project_number": "374120873651",
+    "project_id": "app-famessage",
+    "storage_bucket": "app-famessage.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1061404297645:android:d737579854a6809846f924",
+        "mobilesdk_app_id": "1:374120873651:android:62db822a8a7d7f8fd87ac6",
         "android_client_info": {
-          "package_name": "com.example.applaboratorio"
+          "package_name": "com.br13h.famessage"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBnZ0urbshaihrlWrHX2oNFUeoY5J7RZA4"
+          "current_key": "AIzaSyBvLoShGWk7gCOI8fIKV1YnC6pc5Ium_Pc"
         }
       ],
       "services": {

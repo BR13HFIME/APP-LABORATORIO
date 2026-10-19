@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">App Laboratorio</string>
+    <string name="app_name">FAMessage</string>
 
     <!-- Sign Up -->
     <string name="sign_up_title">Registrarse</string>
