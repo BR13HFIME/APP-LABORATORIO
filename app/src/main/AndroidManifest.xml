@@ -6,9 +6,7 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-    <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <uses-feature android:name="android.hardware.camera" android:required="false" />
@@ -71,16 +69,13 @@
             android:excludeFromRecents="true"
             android:exported="false" />
 
-        <!-- Jitsi -->
+        <!-- Pantalla de la videollamada (WebRTC). Con configChanges, girar el teléfono, conectar un
+             teclado, cambiar el modo oscuro, el idioma o el tamaño de letra o de pantalla no
+             recrea la pantalla, así que la llamada no se corta -->
         <activity
-            android:name="org.jitsi.meet.sdk.JitsiMeetActivity"
-            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|density|smallestScreenSize|uiMode"
-            android:theme="@style/Theme.AppCompat.NoActionBar"
-            android:supportsPictureInPicture="true"
-            android:exported="false"
-            tools:replace="android:configChanges,android:theme" />
-
-
+            android:name=".LlamadaActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|navigation|density|fontScale|locale|layoutDirection|uiMode"
+            android:exported="false" />
 
     </application>
 

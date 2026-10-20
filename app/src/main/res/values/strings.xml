@@ -96,4 +96,17 @@
     <string name="incoming_call">Videollamada entrante…</string>
     <string name="incoming_accept">Contestar</string>
     <string name="incoming_reject">Rechazar</string>
+
+    <!-- Videollamada -->
+    <string name="call_calling">Llamando…</string>
+    <string name="call_connecting">Conectando…</string>
+    <string name="call_connect_failed">No se pudo conectar. Prueben con los dos en la misma red Wi-Fi</string>
+    <string name="call_connection_lost">Se perdió la conexión</string>
+    <string name="call_not_available">La llamada ya terminó</string>
+    <string name="cd_mic_mute">Silenciar micrófono</string>
+    <string name="cd_mic_unmute">Activar micrófono</string>
+    <string name="cd_camera_off">Apagar cámara</string>
+    <string name="cd_camera_on">Encender cámara</string>
+    <string name="cd_switch_camera">Cambiar cámara</string>
+    <string name="cd_hang_up">Colgar</string>
 </resources>

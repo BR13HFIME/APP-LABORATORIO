@@ -97,4 +97,17 @@
     <string name="incoming_call">Incoming video call…</string>
     <string name="incoming_accept">Answer</string>
     <string name="incoming_reject">Decline</string>
+
+    <!-- Video call -->
+    <string name="call_calling">Calling…</string>
+    <string name="call_connecting">Connecting…</string>
+    <string name="call_connect_failed">Could not connect. Try with both devices on the same Wi-Fi network</string>
+    <string name="call_connection_lost">Connection lost</string>
+    <string name="call_not_available">The call has already ended</string>
+    <string name="cd_mic_mute">Mute microphone</string>
+    <string name="cd_mic_unmute">Unmute microphone</string>
+    <string name="cd_camera_off">Turn camera off</string>
+    <string name="cd_camera_on">Turn camera on</string>
+    <string name="cd_switch_camera">Switch camera</string>
+    <string name="cd_hang_up">Hang up</string>
 </resources>

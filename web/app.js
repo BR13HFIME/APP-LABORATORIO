@@ -3,7 +3,9 @@
 //   usuarios/{uid}                    { email, nombre, foto, rol }
 //   chats/{uidA_uidB}                 { participantes, ultimoMensaje, ultimoTimestamp, ultimoEmisor, ultimoLeido }
 //   chats/{uidA_uidB}/mensajes/{id}   { texto, emisorId, timestamp, leido }
-//   llamadas/{uidQueRecibe}           { de, deNombre, sala, estado, timestamp }
+//   llamadas/{uidQueRecibe}           { de, deNombre, sala (= callId), estado, timestamp }
+//   videollamadas/{callId}            { de, para, timestamp, offer, answer, colgada }
+//   videollamadas/{callId}/candidatos_de|candidatos_para/{id}   { candidate, sdpMid, sdpMLineIndex }
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
@@ -15,7 +17,7 @@ import {
   onSnapshot, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-import { firebaseConfig, SERVIDOR_JITSI } from "./firebase-config.js";
+import { firebaseConfig, ICE_SERVERS } from "./firebase-config.js";
 import { t, idioma, alternarIdioma, traducirPagina } from "./i18n.js";
 
 const app = initializeApp(firebaseConfig);
@@ -25,6 +27,9 @@ const db = getFirestore(app);
 // Videollamada: mismos valores que Videollamada.kt en Android
 const LLAMADA = { SONANDO: "sonando", ACEPTADA: "aceptada", RECHAZADA: "rechazada", PERDIDA: "perdida" };
 const SEGUNDOS_TIMBRE = 40;
+const SEGUNDOS_SIN_RESPUESTA = 45;   // quien llama se rinde si el otro no contesta
+const SEGUNDOS_PARA_CONECTAR = 30;   // con oferta y respuesta, margen para que los dos se encuentren
+const SEGUNDOS_DESCONECTADO = 10;    // corte de red tolerado antes de colgar
 const COLORES_AVATAR = ["#EC3B5E", "#FF6B4A", "#7C4DFF", "#00A68C", "#2F80ED", "#F2994A"];
 
 const $ = (sel, raiz = document) => raiz.querySelector(sel);
@@ -407,8 +412,7 @@ const chat = {
   otroUid: "",
   otroNombre: "",
   chatId: "",
-  mensajes: [],
-  llamadaTimestamp: 0
+  mensajes: []
 };
 
 function entrarChat(otroUid) {
@@ -491,15 +495,16 @@ function marcarComoLeidos() {
   lote.commit().catch(() => {});
 }
 
-async function guardarMensaje(texto) {
+// La llamada pasa chatId y otroUid propios por si mientras tanto se abrió otro chat
+async function guardarMensaje(texto, chatId = chat.chatId, otroUid = chat.otroUid) {
   const miUid = estado.usuario.uid;
   const ahora = Date.now();
-  const chatRef = doc(db, "chats", chat.chatId);
+  const chatRef = doc(db, "chats", chatId);
   await Promise.all([
     addDoc(collection(chatRef, "mensajes"), { texto, emisorId: miUid, timestamp: ahora, leido: false }),
     // Resumen para la lista de conversaciones
     setDoc(chatRef, {
-      participantes: [miUid, chat.otroUid],
+      participantes: [miUid, otroUid],
       ultimoMensaje: texto,
       ultimoTimestamp: ahora,
       ultimoEmisor: miUid,
@@ -695,121 +700,495 @@ function detenerTimbre() {
 }
 
 /* =====================================================================
-   Videollamadas (Jitsi en el navegador)
+   Videollamadas (WebRTC propio: el audio y el video van directo entre los
+   dos dispositivos; Firestore solo lleva la oferta, la respuesta y los candidatos)
    ===================================================================== */
 
-let jitsi = null;
-let cargaJitsi = null;
-let alColgar = null;
+// 640x480 alcanza para un celular y no satura la red de ninguno de los dos
+const MEDIOS = {
+  video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+  audio: { echoCancellation: true, noiseSuppression: true }
+};
 
-function cargarJitsi() {
-  if (window.JitsiMeetExternalAPI) return Promise.resolve();
-  cargaJitsi = cargaJitsi || new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = `https://${SERVIDOR_JITSI}/external_api.js`;
-    script.onload = resolve;
-    script.onerror = () => { cargaJitsi = null; reject(new Error("jitsi")); };
-    document.head.appendChild(script);
-  });
-  return cargaJitsi;
+let llamada = null;   // la llamada abierta; mientras exista estamos "ocupados"
+
+function nuevaLlamada(datos) {
+  return {
+    ...datos,                 // callId, soyQuienLlama, otroUid, otroNombre, timestamp
+    pc: null,
+    local: null,              // mi cámara y micrófono
+    remoto: null,             // solo si el otro manda pistas sin stream
+    emisorVideo: null,        // para cambiar de cámara sin renegociar
+    cola: [],                 // candidatos que llegan antes que la descripción remota
+    remotaLista: false,
+    respuestaRecibida: false,
+    documentoCreado: false,   // ya existe videollamadas/{callId}: al colgar lo marcamos
+    hayVideoRemoto: false,
+    inicio: 0,                // cuándo se conectó (para el cronómetro)
+    quitar: [],               // listeners de Firestore
+    temporizadorRespuesta: null,
+    temporizadorConectar: null,
+    temporizadorCorte: null,
+    reloj: null,
+    cambiandoCamara: false,
+    terminada: false
+  };
 }
 
-// Precargamos el script de Jitsi para que la llamada abra rápido
-setTimeout(() => cargarJitsi().catch(() => {}), 3000);
-
-async function abrirVideollamada(sala, titulo, onColgar) {
-  const capa = $("#call");
-  $("#call-title").textContent = titulo;
-  $("#call-external").href = `https://${SERVIDOR_JITSI}/${sala}#config.prejoinConfig.enabled=false&userInfo.displayName=%22${encodeURIComponent(nombreVisible(estado.perfil || { email: estado.usuario.email }))}%22`;
-  capa.hidden = false;
-  alColgar = onColgar || null;
-
-  try {
-    await cargarJitsi();
-  } catch {
-    cerrarVideollamada();
+async function pedirMedios() {
+  // Sin HTTPS (o en navegadores muy viejos) no hay acceso a la cámara; y sin WebRTC
+  // (desactivado en Firefox, Tor) no tiene sentido pedirla
+  if (!navigator.mediaDevices?.getUserMedia || typeof RTCPeerConnection === "undefined") {
     toast(t("call_failed"));
-    return;
+    return null;
   }
-
-  $("#call-frame").innerHTML = "";
-  jitsi = new window.JitsiMeetExternalAPI(SERVIDOR_JITSI, {
-    roomName: sala,
-    parentNode: $("#call-frame"),
-    width: "100%",
-    height: "100%",
-    lang: idioma(),
-    userInfo: { displayName: nombreVisible(estado.perfil || { email: estado.usuario.email }) },
-    configOverwrite: {
-      prejoinPageEnabled: false,
-      prejoinConfig: { enabled: false },
-      disableDeepLinking: true,
-      startWithAudioMuted: false,
-      startWithVideoMuted: false,
-      enableWelcomePage: false,
-      enableClosePage: false,
-      lobby: { autoKnock: true }
-    },
-    interfaceConfigOverwrite: {
-      MOBILE_APP_PROMO: false,
-      SHOW_JITSI_WATERMARK: false,
-      SHOW_CHROME_EXTENSION_BANNER: false
+  try {
+    return await navigator.mediaDevices.getUserMedia(MEDIOS);
+  } catch (error) {
+    // Computadora sin cámara: seguimos solo con micrófono y vemos al otro igual
+    if (error?.name === "NotFoundError" || error?.name === "OverconstrainedError") {
+      try {
+        return await navigator.mediaDevices.getUserMedia({ audio: MEDIOS.audio });
+      } catch { /* abajo avisamos */ }
     }
-  });
-  jitsi.addListener("readyToClose", cerrarVideollamada);
-}
-
-function cerrarVideollamada() {
-  if (jitsi) {
-    try { jitsi.dispose(); } catch { /* ya estaba cerrada */ }
-    jitsi = null;
+    const negado = error?.name === "NotAllowedError" || error?.name === "SecurityError";
+    toast(t(negado ? "permissions_needed" : "call_failed"));
+    return null;
   }
-  $("#call-frame").innerHTML = "";
-  $("#call").hidden = true;
-  const fn = alColgar;
-  alColgar = null;
-  fn?.();
 }
 
-// Llamar desde el chat: hace sonar al otro y deja aviso en la conversación
+function crearConexion(l) {
+  const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  l.pc = pc;
+  for (const pista of l.local.getTracks()) {
+    const emisor = pc.addTrack(pista, l.local);
+    if (pista.kind === "video") l.emisorVideo = emisor;
+  }
+  // Sin cámara propia igual pedimos el video del otro
+  if (l.soyQuienLlama && !l.emisorVideo) pc.addTransceiver("video", { direction: "recvonly" });
+
+  // Mis candidatos: candidatos_de si llamo, candidatos_para si contesto
+  const misCandidatos = collection(db, "videollamadas", l.callId, l.soyQuienLlama ? "candidatos_de" : "candidatos_para");
+  pc.onicecandidate = (e) => {
+    const c = e.candidate;
+    if (!c || !c.candidate || l.terminada) return;   // null = ya no hay más candidatos
+    addDoc(misCandidatos, { candidate: c.candidate, sdpMid: c.sdpMid ?? null, sdpMLineIndex: c.sdpMLineIndex ?? 0 })
+      .catch(() => {});
+  };
+
+  pc.ontrack = (e) => {
+    if (l.terminada) return;
+    const video = $("#call-remote");
+    // Lo normal es que audio y video lleguen en el mismo stream; si no, armamos uno
+    let flujo = e.streams[0];
+    if (!flujo) {
+      l.remoto = l.remoto || new MediaStream();
+      l.remoto.addTrack(e.track);
+      flujo = l.remoto;
+      video.srcObject = null;   // obliga a Safari a tomar la pista nueva
+    }
+    if (video.srcObject !== flujo) video.srcObject = flujo;
+    video.play().catch(() => {});
+    if (e.track.kind === "video") {
+      l.hayVideoRemoto = true;
+      if (l.inicio) $("#call-waiting").hidden = true;
+    }
+  };
+
+  // Safari viejo no tiene connectionState: el estado ICE dice lo mismo
+  if ("connectionState" in pc) pc.onconnectionstatechange = () => revisarConexion(l);
+  else pc.oniceconnectionstatechange = () => revisarConexion(l);
+}
+
+function revisarConexion(l) {
+  if (l.terminada) return;
+  const s = "connectionState" in l.pc ? l.pc.connectionState : l.pc.iceConnectionState;
+  if (s === "connected" || s === "completed") {
+    clearTimeout(l.temporizadorConectar);
+    clearTimeout(l.temporizadorCorte);
+    l.temporizadorCorte = null;
+    // El avatar se queda si el otro no tiene cámara
+    if (l.hayVideoRemoto) $("#call-waiting").hidden = true;
+    if (!l.inicio) {
+      l.inicio = Date.now();
+      pintarReloj(l);
+      l.reloj = setInterval(() => pintarReloj(l), 1000);
+    }
+  } else if (s === "disconnected") {
+    // Un corte breve (cambio de Wi-Fi a datos) se recupera solo; si dura, colgamos
+    if (!l.temporizadorCorte) {
+      l.temporizadorCorte = setTimeout(() => terminarLlamada(l, t("call_connection_lost")), SEGUNDOS_DESCONECTADO * 1000);
+    }
+  } else if (s === "failed") {
+    terminarLlamada(l, t("call_failed_network"));
+  }
+}
+
+// Ya hay oferta y respuesta: si no se encuentran (el otro se cerró a la fuerza, sus candidatos
+// nunca llegaron) ICE puede quedarse "conectando" para siempre
+function esperarConexion(l) {
+  clearTimeout(l.temporizadorConectar);
+  l.temporizadorConectar = setTimeout(() => terminarLlamada(l, t("call_failed_network")), SEGUNDOS_PARA_CONECTAR * 1000);
+}
+
+function pintarReloj(l) {
+  const s = Math.floor((Date.now() - l.inicio) / 1000);
+  $("#call-status").textContent = `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+}
+
+// "Llamando…" / "Conectando…" hasta que arranca el cronómetro
+function ponerEstadoLlamada(l, clave) {
+  if (!l.inicio && !l.terminada) $("#call-status").textContent = t(clave);
+}
+
+function agregarCandidato(l, d) {
+  if (l.terminada || !d?.candidate) return;
+  let candidato;
+  try {
+    candidato = new RTCIceCandidate({ candidate: d.candidate, sdpMid: d.sdpMid ?? null, sdpMLineIndex: d.sdpMLineIndex ?? null });
+  } catch {
+    return;   // mal formado: lo ignoramos
+  }
+  if (l.remotaLista) l.pc.addIceCandidate(candidato).catch(() => {});
+  else l.cola.push(candidato);
+}
+
+// Los candidatos solo se pueden agregar después de la descripción remota
+function vaciarCola(l) {
+  l.remotaLista = true;
+  for (const c of l.cola.splice(0)) l.pc.addIceCandidate(c).catch(() => {});
+}
+
+function escucharCandidatos(l) {
+  const suyos = collection(db, "videollamadas", l.callId, l.soyQuienLlama ? "candidatos_para" : "candidatos_de");
+  l.quitar.push(onSnapshot(suyos, (snap) => {
+    for (const cambio of snap.docChanges()) {
+      if (cambio.type === "added") agregarCandidato(l, cambio.doc.data());
+    }
+  }, () => {}));
+}
+
+// El documento de la llamada trae la respuesta (a quien llama) y el aviso de que el otro colgó
+function escucharLlamada(l) {
+  l.quitar.push(onSnapshot(doc(db, "videollamadas", l.callId), async (snap) => {
+    const d = snap.data();
+    if (!d || l.terminada) return;
+    if (d.colgada === true) return terminarLlamada(l, "", { marcarColgada: false });
+    if (!l.soyQuienLlama || !d.answer?.sdp || l.respuestaRecibida) return;
+
+    l.respuestaRecibida = true;
+    clearTimeout(l.temporizadorRespuesta);
+    esperarConexion(l);
+    ponerEstadoLlamada(l, "call_connecting");
+    try {
+      await l.pc.setRemoteDescription({ type: "answer", sdp: d.answer.sdp });
+      vaciarCola(l);
+    } catch {
+      terminarLlamada(l, t("call_failed"));
+    }
+  }, () => {}));
+}
+
+/* ---------- Pantalla de llamada ---------- */
+
+function abrirPantallaLlamada(l, clave) {
+  $("#call-title").textContent = l.otroNombre;
+  $("#call-status").textContent = t(clave);
+  $("#call-waiting").hidden = false;
+  ponerAvatarDe($("#call-avatar"), l.otroUid, l.otroNombre);
+  $("#call-remote").srcObject = null;
+  $("#call").hidden = false;
+  // El chat de atrás queda fuera del alcance del teclado y del lector de pantalla
+  $("#app").inert = true;
+  $("#call [data-action=hangup]").focus();
+  mostrarVistaPrevia(l);
+  pintarControles(l);
+  revisarCamaras(l);
+}
+
+// Mi cámara en la ventanita, en espejo salvo que sea la trasera
+function mostrarVistaPrevia(l) {
+  const propio = $("#call-local");
+  const pista = l.local.getVideoTracks()[0];
+  propio.hidden = !pista || !pista.enabled;
+  propio.classList.toggle("espejo", pista?.getSettings?.().facingMode !== "environment");
+  propio.srcObject = pista ? new MediaStream([pista]) : null;
+  propio.play().catch(() => {});   // iOS a veces no arranca solo aunque tenga autoplay
+}
+
+function pintarControles(l) {
+  const mic = l.local.getAudioTracks()[0];
+  const cam = l.local.getVideoTracks()[0];
+  marcarApagado($("#call-mic"), !mic || !mic.enabled);
+  marcarApagado($("#call-camera"), !cam || !cam.enabled);
+  $("#call-camera").hidden = !cam;
+}
+
+function marcarApagado(boton, apagado) {
+  boton.classList.toggle("off", apagado);
+  boton.setAttribute("aria-pressed", String(apagado));
+}
+
+// El botón de cambiar cámara solo aparece si hay más de una
+async function revisarCamaras(l) {
+  const boton = $("#call-switch");
+  boton.hidden = true;
+  if (!l.local.getVideoTracks().length) return;
+  try {
+    const camaras = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
+    if (!l.terminada) boton.hidden = camaras.length < 2;
+  } catch { /* sin lista de cámaras: nos quedamos con la actual */ }
+}
+
+function alternarMicrofono() {
+  const pista = llamada?.local?.getAudioTracks()[0];
+  if (!pista) return;
+  pista.enabled = !pista.enabled;
+  pintarControles(llamada);
+}
+
+function alternarCamara() {
+  const pista = llamada?.local?.getVideoTracks()[0];
+  if (!pista) return;
+  pista.enabled = !pista.enabled;   // el otro ve negro; la cámara sigue lista para volver al instante
+  pintarControles(llamada);
+  mostrarVistaPrevia(llamada);
+}
+
+// Celular: alterna frontal / trasera. Computadora (aunque su webcam diga "frontal"):
+// pasa a la siguiente cámara de la lista
+async function cambiarCamara() {
+  const l = llamada;
+  const actual = l?.local?.getVideoTracks()[0];
+  if (!actual || !l.emisorVideo || l.cambiandoCamara) return;
+  l.cambiandoCamara = true;
+  const ajustes = actual.getSettings?.() || {};
+  const tamano = { width: MEDIOS.video.width, height: MEDIOS.video.height };
+  const abrir = async (video) => (await navigator.mediaDevices.getUserMedia({ video })).getVideoTracks()[0];
+  actual.stop();   // iOS no deja usar dos cámaras a la vez
+  let nueva = null;
+  try {
+    if (ajustes.facingMode) {
+      const otroLado = ajustes.facingMode === "environment" ? "user" : "environment";
+      nueva = await abrir({ ...tamano, facingMode: { exact: otroLado } }).catch(() => null);
+    }
+    if (!nueva) {
+      const camaras = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
+      const i = camaras.findIndex((c) => c.deviceId === ajustes.deviceId);
+      nueva = await abrir({ ...tamano, deviceId: { exact: camaras[(i + 1) % camaras.length].deviceId } });
+    }
+  } catch {
+    // No se pudo abrir otra: volvemos a la de antes
+    const antes = ajustes.deviceId ? { ...tamano, deviceId: { exact: ajustes.deviceId } } : MEDIOS.video;
+    nueva = await abrir(antes).catch(() => null);
+  }
+  try {
+    if (l.terminada) return nueva?.stop();
+    // Sin ninguna (p. ej. iOS volvió a pedir permiso y se negó): soltamos la pista muerta
+    // para que el otro no vea un cuadro congelado y no quede un botón de cámara "prendida"
+    l.local.removeTrack(actual);
+    if (nueva) {
+      nueva.enabled = actual.enabled;   // si la cámara estaba apagada, sigue apagada
+      l.local.addTrack(nueva);
+    }
+    await l.emisorVideo.replaceTrack(nueva);
+  } catch {
+    /* la conexión ya se cerró */
+  } finally {
+    l.cambiandoCamara = false;
+    if (!l.terminada) {
+      mostrarVistaPrevia(l);
+      pintarControles(l);
+      if (!nueva) revisarCamaras(l);
+    }
+  }
+}
+
+/* ---------- Colgar ---------- */
+
+// Idempotente: el botón, el otro que colgó, un error o cerrar la pestaña pueden llegar juntos.
+// Devuelve la promesa de los avisos al otro (cerrar sesión la espera antes de salir)
+function terminarLlamada(l, aviso = "", { marcarColgada = true } = {}) {
+  if (!l || l.terminada) return Promise.resolve();
+  l.terminada = true;
+  if (llamada === l) llamada = null;
+
+  // Avisamos al otro; si aún le sonaba, que deje de sonar
+  let avisos = Promise.resolve();
+  if (marcarColgada && l.documentoCreado) {
+    avisos = Promise.allSettled([
+      setDoc(doc(db, "videollamadas", l.callId), { colgada: true }, { merge: true }),
+      l.soyQuienLlama && cambiarAviso(l.otroUid, l.timestamp, LLAMADA.PERDIDA)
+    ]);
+  }
+
+  l.quitar.forEach((fn) => fn());
+  clearTimeout(l.temporizadorRespuesta);
+  clearTimeout(l.temporizadorConectar);
+  clearTimeout(l.temporizadorCorte);
+  clearInterval(l.reloj);
+  if (l.pc) {
+    l.pc.onicecandidate = l.pc.ontrack = l.pc.onconnectionstatechange = l.pc.oniceconnectionstatechange = null;
+    try { l.pc.close(); } catch { /* ya estaba cerrada */ }
+  }
+  l.local?.getTracks().forEach((pista) => pista.stop());   // apaga la luz de la cámara
+
+  $("#call-remote").srcObject = null;
+  $("#call-local").srcObject = null;
+  $("#call").hidden = true;
+  $("#app").inert = false;
+  if (aviso) toast(aviso, 4000);
+  return avisos;
+}
+
+// Cambia el aviso de timbre solo si sigue sonando ESTA llamada: no pisa una llamada nueva
+// (quien llama colgó y volvió a llamar) ni revive una que ya terminó
+async function cambiarAviso(uidQueRecibe, timestamp, nuevoEstado) {
+  const ref = doc(db, "llamadas", uidQueRecibe);
+  try {
+    const d = (await getDoc(ref)).data();
+    if (d && d.timestamp === timestamp && d.estado === LLAMADA.SONANDO) {
+      await updateDoc(ref, { estado: nuevoEstado });
+    }
+  } catch { /* sin conexión: se vence sola a los 40 s */ }
+}
+
+// Cerrar o recargar la pestaña cuelga (lo que alcance a salir antes de que se cierre)
+window.addEventListener("pagehide", () => terminarLlamada(llamada));
+
+/* ---------- Quien llama ---------- */
+
 async function llamar() {
   const miUid = estado.usuario?.uid;
   if (!miUid || !chat.otroUid) return toast(t("call_failed"));
+  if (llamada) return;   // ya hay una llamada abierta (o pidiendo permisos)
 
-  const sala = `AppLaboratorio_${chat.chatId}`;
-  const miNombre = nombreVisible(estado.perfil || { email: estado.usuario.email });
-  const ahora = Date.now();
-  const refLlamada = doc(db, "llamadas", chat.otroUid);
-  const otroNombre = chat.otroNombre;
-  chat.llamadaTimestamp = ahora;
+  const chatId = chat.chatId;
+  const l = nuevaLlamada({ soyQuienLlama: true, otroUid: chat.otroUid, otroNombre: chat.otroNombre || "Usuario" });
+  llamada = l;
+
+  // Sin cámara y micrófono no se crea nada en Firestore
+  const local = await pedirMedios();
+  if (l.terminada) {   // se cerró la sesión mientras pedíamos permisos
+    local?.getTracks().forEach((pista) => pista.stop());
+    return;
+  }
+  if (!local) return terminarLlamada(l, "", { marcarColgada: false });
+  l.local = local;
+  l.timestamp = Date.now();
+  l.callId = `${chatId}_${l.timestamp}`;
+
+  abrirPantallaLlamada(l, "call_calling");
+  // Por si el otro nunca responde (teléfono apagado, sin internet). Corre desde ya: sin red,
+  // Firestore no confirma las escrituras de abajo y nos quedaríamos "Llamando…" para siempre
+  l.temporizadorRespuesta = setTimeout(
+    () => terminarLlamada(l, t("call_missed", l.otroNombre)),
+    SEGUNDOS_SIN_RESPUESTA * 1000
+  );
+  try {
+    crearConexion(l);
+  } catch {
+    return terminarLlamada(l, t("call_failed"));
+  }
+  escucharCandidatos(l);
 
   try {
-    await setDoc(refLlamada, { de: miUid, deNombre: miNombre, sala, estado: LLAMADA.SONANDO, timestamp: ahora });
+    const oferta = await l.pc.createOffer();
+    await l.pc.setLocalDescription(oferta);
+    await setDoc(doc(db, "videollamadas", l.callId), {
+      de: miUid, para: l.otroUid, timestamp: l.timestamp, offer: { type: "offer", sdp: oferta.sdp }
+    });
+    l.documentoCreado = true;
+    if (l.terminada) return;
+    // Recién ahora suena el otro: cuando conteste, la oferta ya lo está esperando
+    const miNombre = nombreVisible(estado.perfil || { email: estado.usuario.email });
+    await setDoc(doc(db, "llamadas", l.otroUid), {
+      de: miUid, deNombre: miNombre, sala: l.callId, estado: LLAMADA.SONANDO, timestamp: l.timestamp
+    });
   } catch (error) {
-    return toast(mensajeDeError(error));
+    return terminarLlamada(l, mensajeDeError(error));
   }
-  guardarMensaje(t("chat_notice_call")).catch(() => {});
+  if (l.terminada) return;
+  guardarMensaje(t("chat_notice_call"), chatId, l.otroUid).catch(() => {});
 
-  // Avisamos si nos rechazan o no contestan
-  const quitar = onSnapshot(refLlamada, (snap) => {
+  escucharLlamada(l);
+  // Lo que hace el otro con el timbre: contestó, rechazó o no contestó
+  l.quitar.push(onSnapshot(doc(db, "llamadas", l.otroUid), (snap) => {
     const d = snap.data();
-    if (!d || d.timestamp !== ahora) return;
-    if (d.estado === LLAMADA.RECHAZADA) toast(t("call_rejected", otroNombre), 4000);
-    else if (d.estado === LLAMADA.PERDIDA) toast(t("call_missed", otroNombre), 4000);
-    else if (d.estado !== LLAMADA.ACEPTADA) return;
-    quitar();
-  }, () => {});
+    if (!d || d.timestamp !== l.timestamp || l.terminada) return;
+    if (d.estado === LLAMADA.ACEPTADA) return ponerEstadoLlamada(l, "call_connecting");
+    if (l.respuestaRecibida) return;   // ya contestó: un cambio tardío del timbre no corta
+    if (d.estado === LLAMADA.RECHAZADA) terminarLlamada(l, t("call_rejected", l.otroNombre));
+    else if (d.estado === LLAMADA.PERDIDA) terminarLlamada(l, t("call_missed", l.otroNombre));
+  }, () => {}));
+}
 
-  abrirVideollamada(sala, otroNombre, async () => {
-    // Colgamos antes de que contestara: dejamos de hacerlo sonar
-    try {
-      const snap = await getDoc(refLlamada);
-      const d = snap.data();
-      if (d && d.timestamp === ahora && d.estado === LLAMADA.SONANDO) {
-        await updateDoc(refLlamada, { estado: LLAMADA.PERDIDA });
-      }
-    } catch { /* sin conexión: se vence sola a los 40 s */ }
+/* ---------- Quien recibe (después de tocar "Contestar") ---------- */
+
+async function contestar(d) {
+  const miUid = estado.usuario.uid;
+  if (llamada) return;
+  const responder = (nuevoEstado) => cambiarAviso(miUid, d.timestamp, nuevoEstado);
+
+  // El callId es "uidMenor_uidMayor_timestamp" de este chat y de este timbre
+  // (una sala de Jitsi de las versiones viejas, "AppLaboratorio_uidA_uidB", no sirve)
+  if (d.sala !== `${chatIdEntre(miUid, d.de)}_${d.timestamp}`) {
+    responder(LLAMADA.PERDIDA);
+    return toast(t("call_failed"));
+  }
+
+  const l = nuevaLlamada({
+    soyQuienLlama: false, callId: d.sala, otroUid: d.de, otroNombre: d.deNombre || "Usuario", timestamp: d.timestamp
   });
+  // Quien llama crea el documento antes de hacer sonar: desde ya, colgar le avisa
+  l.documentoCreado = true;
+  llamada = l;
+
+  const local = await pedirMedios();
+  if (l.terminada) {   // se cerró la sesión mientras pedíamos permisos
+    local?.getTracks().forEach((pista) => pista.stop());
+    return;
+  }
+  if (!local) {
+    // Sin permisos no podemos contestar: a quien llama le deja de sonar
+    responder(LLAMADA.PERDIDA);
+    return terminarLlamada(l, "", { marcarColgada: false });
+  }
+  l.local = local;
+
+  abrirPantallaLlamada(l, "call_connecting");
+  try {
+    crearConexion(l);
+  } catch {
+    responder(LLAMADA.PERDIDA);
+    return terminarLlamada(l, t("call_failed"), { marcarColgada: false });
+  }
+  responder(LLAMADA.ACEPTADA);
+
+  const ref = doc(db, "videollamadas", l.callId);
+  let datos;
+  try {
+    datos = (await getDoc(ref)).data();
+  } catch (error) {
+    return terminarLlamada(l, mensajeDeError(error), { marcarColgada: false });
+  }
+  if (l.terminada) return;
+  if (!datos?.offer?.sdp) return terminarLlamada(l, t("call_failed"), { marcarColgada: false });
+  if (datos.colgada) return terminarLlamada(l, t("call_ended"), { marcarColgada: false });
+  esperarConexion(l);
+
+  // Los candidatos que lleguen antes de la oferta esperan en la cola
+  escucharCandidatos(l);
+  escucharLlamada(l);
+  try {
+    await l.pc.setRemoteDescription({ type: "offer", sdp: datos.offer.sdp });
+    vaciarCola(l);
+    const respuesta = await l.pc.createAnswer();
+    await l.pc.setLocalDescription(respuesta);
+    await setDoc(ref, { answer: { type: "answer", sdp: respuesta.sdp } }, { merge: true });
+  } catch {
+    terminarLlamada(l, t("call_failed"));
+  }
 }
 
 /* ---------- Llamada entrante ---------- */
@@ -834,29 +1213,32 @@ function revisarLlamadaEntrante(snap) {
   const antiguedad = Date.now() - (d.timestamp || 0);
   if (antiguedad > (SEGUNDOS_TIMBRE + 20) * 1000) return;   // margen por relojes desfasados
   if (d.timestamp === entrante.mostradoTimestamp) return;
-  if (!$("#call").hidden) return;                           // ya estamos en una llamada
+  if (llamada) return;                                      // ya estamos en una llamada: ocupado
 
   entrante.timestamp = entrante.mostradoTimestamp = d.timestamp;
   entrante.datos = d;
   mostrarEntrante(d);
 }
 
-async function mostrarEntrante(d) {
+// La inicial al instante y la foto cuando llegue
+async function ponerAvatarDe(el, uid, nombre) {
+  pintarAvatar(el, nombre, "", { colorear: false });
+  try {
+    const perfil = await getDoc(doc(db, "usuarios", uid));
+    if (perfil.exists()) pintarAvatar(el, nombre, perfil.data().foto, { colorear: false });
+  } catch { /* sin foto */ }
+}
+
+function mostrarEntrante(d) {
   const nombre = d.deNombre || "Usuario";
   $("#incoming-name").textContent = nombre;
-  pintarAvatar($("#incoming-avatar"), nombre, "", { colorear: false });
+  ponerAvatarDe($("#incoming-avatar"), d.de, nombre);
   $("#incoming").hidden = false;
   empezarTimbre();
   if (!timbre.desbloqueado) $("#sound-chip").hidden = false;
 
   clearTimeout(entrante.temporizador);
   entrante.temporizador = setTimeout(() => responderEntrante(LLAMADA.PERDIDA), SEGUNDOS_TIMBRE * 1000);
-
-  // Foto de quien llama
-  try {
-    const perfil = await getDoc(doc(db, "usuarios", d.de));
-    if (perfil.exists()) pintarAvatar($("#incoming-avatar"), nombre, perfil.data().foto, { colorear: false });
-  } catch { /* sin foto */ }
 }
 
 function cerrarEntrante() {
@@ -867,12 +1249,14 @@ function cerrarEntrante() {
 
 async function responderEntrante(nuevoEstado) {
   const d = entrante.datos;
+  entrante.datos = null;   // un doble toque no contesta dos veces
   cerrarEntrante();
   if (!d || !estado.usuario) return;
+  // Contestar abre nuestra pantalla de llamada (pide cámara y micrófono y marca "aceptada")
+  if (nuevoEstado === LLAMADA.ACEPTADA) return contestar(d);
   try {
     await updateDoc(doc(db, "llamadas", estado.usuario.uid), { estado: nuevoEstado });
   } catch { /* si falla, la llamada se vence sola */ }
-  if (nuevoEstado === LLAMADA.ACEPTADA) abrirVideollamada(d.sala, d.deNombre || "");
 }
 
 /* =====================================================================
@@ -899,8 +1283,16 @@ function terminarListenersDeSesion() {
   estado.limpiezaSesion = [];
   estado.perfil = null;
   cerrarEntrante();
-  if (!$("#call").hidden) cerrarVideollamada();
+  terminarLlamada(llamada);
   $("#sound-chip").hidden = true;
+}
+
+// Primero colgamos, con la sesión todavía abierta: después de signOut las reglas rechazan el
+// aviso al otro y le seguiría sonando. Si no hay red, no esperamos más de 2 s
+async function cerrarSesion() {
+  await Promise.race([terminarLlamada(llamada), new Promise((listo) => setTimeout(listo, 2000))]);
+  await signOut(auth);
+  toast(t("logout_done"));
 }
 
 onAuthStateChanged(auth, (usuario) => {
@@ -940,13 +1332,22 @@ document.addEventListener("click", (e) => {
       dialogoReset.close();
       break;
     case "logout":
-      signOut(auth).then(() => toast(t("logout_done")));
+      cerrarSesion();
       break;
     case "call":
       llamar();
       break;
     case "hangup":
-      cerrarVideollamada();
+      terminarLlamada(llamada);
+      break;
+    case "toggle-mic":
+      alternarMicrofono();
+      break;
+    case "toggle-camera":
+      alternarCamara();
+      break;
+    case "switch-camera":
+      cambiarCamara();
       break;
     case "accept":
       desbloquearAudio();

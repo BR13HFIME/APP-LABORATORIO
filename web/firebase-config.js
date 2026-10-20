@@ -9,5 +9,8 @@ export const firebaseConfig = {
   messagingSenderId: "374120873651"
 };
 
-// Servidor de videollamadas (el mismo que la app Android, para que se encuentren en la misma sala)
-export const SERVIDOR_JITSI = "meet.ffmuc.net";
+// Servidores ICE de la videollamada (la misma lista que la app Android).
+// El STUN solo le dice a cada dispositivo su IP pública; no pasa audio ni video por él.
+// Si se deja la lista vacía, la llamada solo funciona con los dos dispositivos en la misma red Wi-Fi.
+// No hay servidor TURN: el audio y el video van siempre directo entre los dos dispositivos.
+export const ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }];

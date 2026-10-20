@@ -20,6 +20,35 @@ import com.google.firebase.firestore.SetOptions
 
 class ChatActivity : AppCompatActivity() {
 
+    companion object {
+        // También lo usa la pantalla de llamada para dejar el aviso "📹 Inicié una videollamada"
+        fun guardarMensaje(chatId: String, miUid: String, otroUid: String, texto: String) {
+            val ahora = System.currentTimeMillis()
+
+            val mensaje = hashMapOf(
+                "texto" to texto,
+                "emisorId" to miUid,
+                "timestamp" to ahora,
+                "leido" to false
+            )
+
+            val chatRef = FirebaseFirestore.getInstance().collection("chats").document(chatId)
+            chatRef.collection("mensajes").add(mensaje)
+
+            // Resumen para la lista de conversaciones (último mensaje, hora y si ya se leyó)
+            chatRef.set(
+                hashMapOf(
+                    "participantes" to listOf(miUid, otroUid),
+                    "ultimoMensaje" to texto,
+                    "ultimoTimestamp" to ahora,
+                    "ultimoEmisor" to miUid,
+                    "ultimoLeido" to false
+                ),
+                SetOptions.merge()
+            )
+        }
+    }
+
     private lateinit var recyclerView: RecyclerView
     private lateinit var etMensaje: EditText
     private lateinit var btnEnviar: Button
@@ -38,11 +67,6 @@ class ChatActivity : AppCompatActivity() {
     private var enPantalla = false
     private var mensajesActuales: List<DocumentSnapshot> = emptyList()
     private val escuchas = mutableListOf<ListenerRegistration>()
-
-    // Seguimiento de la llamada que hicimos, para avisar si la rechazan o no contestan
-    private var escuchaLlamada: ListenerRegistration? = null
-    private var llamadaTimestamp = 0L
-    private var seFueALaLlamada = false
 
     private val permisosLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -105,15 +129,6 @@ class ChatActivity : AppCompatActivity() {
         escucharMensajes()
     }
 
-    override fun onStart() {
-        super.onStart()
-        // Volvimos de la videollamada: si el otro nunca contestó, dejamos de hacerlo sonar
-        if (seFueALaLlamada) {
-            seFueALaLlamada = false
-            cancelarLlamadaSinContestar()
-        }
-    }
-
     override fun onResume() {
         super.onResume()
         enPantalla = true
@@ -125,14 +140,8 @@ class ChatActivity : AppCompatActivity() {
         super.onPause()
     }
 
-    override fun onStop() {
-        if (llamadaTimestamp != 0L) seFueALaLlamada = true
-        super.onStop()
-    }
-
     override fun onDestroy() {
         escuchas.forEach { it.remove() }
-        escuchaLlamada?.remove()
         super.onDestroy()
     }
 
@@ -158,47 +167,9 @@ class ChatActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.call_failed, Toast.LENGTH_LONG).show()
             return
         }
-
-        val sala = Videollamada.salaPara(chatId)
-
-        // Hacemos sonar el teléfono del otro y dejamos constancia en el chat
-        llamadaTimestamp = Videollamada.llamar(otroUid, miNombre, sala)
-        seguirLlamada()
-        guardarMensaje(getString(R.string.chat_notice_call))
-
-        Videollamada.abrir(this, sala, miNombre)
-    }
-
-    private fun seguirLlamada() {
-        escuchaLlamada?.remove()
-        val timestampEsperado = llamadaTimestamp
-        escuchaLlamada = db.collection(Videollamada.COLECCION).document(otroUid)
-            .addSnapshotListener { doc, _ ->
-                if (doc == null || doc.getLong("timestamp") != timestampEsperado) return@addSnapshotListener
-                val aviso = when (doc.getString("estado")) {
-                    Videollamada.RECHAZADA -> getString(R.string.call_rejected, otroNombre)
-                    Videollamada.PERDIDA -> getString(R.string.call_missed, otroNombre)
-                    Videollamada.ACEPTADA -> ""
-                    else -> return@addSnapshotListener
-                }
-                if (aviso.isNotEmpty()) Toast.makeText(this, aviso, Toast.LENGTH_LONG).show()
-                escuchaLlamada?.remove()
-                escuchaLlamada = null
-                llamadaTimestamp = 0L
-            }
-    }
-
-    private fun cancelarLlamadaSinContestar() {
-        val timestampEsperado = llamadaTimestamp
-        if (timestampEsperado == 0L) return
-        val ref = db.collection(Videollamada.COLECCION).document(otroUid)
-        ref.get().addOnSuccessListener { doc ->
-            if (doc.getLong("timestamp") == timestampEsperado &&
-                doc.getString("estado") == Videollamada.SONANDO
-            ) {
-                ref.update("estado", Videollamada.PERDIDA)
-            }
-        }
+        // La pantalla de llamada se encarga de todo: señalización, timbre, aviso en el chat
+        // y avisar si el otro rechaza o no contesta
+        startActivity(LlamadaActivity.intentLlamar(this, otroUid, otroNombre, miNombre, chatId))
     }
 
     private fun escucharMensajes() {
@@ -240,34 +211,8 @@ class ChatActivity : AppCompatActivity() {
         val texto = etMensaje.text.toString().trim()
         if (texto.isEmpty()) return
 
-        guardarMensaje(texto)
+        guardarMensaje(chatId, miUid, otroUid, texto)
 
         etMensaje.text.clear()
-    }
-
-    private fun guardarMensaje(texto: String) {
-        val ahora = System.currentTimeMillis()
-
-        val mensaje = hashMapOf(
-            "texto" to texto,
-            "emisorId" to miUid,
-            "timestamp" to ahora,
-            "leido" to false
-        )
-
-        val chatRef = db.collection("chats").document(chatId)
-        chatRef.collection("mensajes").add(mensaje)
-
-        // Resumen para la lista de conversaciones (último mensaje, hora y si ya se leyó)
-        chatRef.set(
-            hashMapOf(
-                "participantes" to listOf(miUid, otroUid),
-                "ultimoMensaje" to texto,
-                "ultimoTimestamp" to ahora,
-                "ultimoEmisor" to miUid,
-                "ultimoLeido" to false
-            ),
-            SetOptions.merge()
-        )
     }
 }

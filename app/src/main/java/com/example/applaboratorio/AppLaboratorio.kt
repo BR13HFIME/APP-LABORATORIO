@@ -7,7 +7,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import org.jitsi.meet.sdk.JitsiMeetActivity
 
 // Mientras la app está abierta escuchamos llamadas/{miUid}: cuando alguien nos llama,
 // mostramos la pantalla de llamada entrante encima de la pantalla que esté a la vista.
@@ -61,8 +60,9 @@ class AppLaboratorio : Application(), Application.ActivityLifecycleCallbacks {
             llamadaPendiente = documento
             return
         }
-        // Si ya estamos en una llamada (o viendo otra entrante) no interrumpimos
-        if (actual is LlamadaEntranteActivity || actual is JitsiMeetActivity) return
+        // Si ya estamos en una llamada (o viendo otra entrante) no interrumpimos: "ocupado".
+        // enCurso cubre también la llamada abierta detrás de otra pantalla
+        if (actual is LlamadaEntranteActivity || actual is LlamadaActivity || LlamadaActivity.enCurso) return
 
         ultimaLlamadaMostrada = timestamp
         llamadaPendiente = null

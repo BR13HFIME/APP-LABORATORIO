@@ -39,7 +39,9 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
-    implementation("org.jitsi.react:jitsi-meet-sdk:10.2.0")
+    // WebRTC: el libwebrtc de Google ya compilado. El audio y el video van directo entre
+    // los dos teléfonos; Firebase solo lleva la señalización
+    implementation("io.getstream:stream-webrtc-android:1.3.10")
 //Base de datos
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
     implementation("com.google.firebase:firebase-auth-ktx")

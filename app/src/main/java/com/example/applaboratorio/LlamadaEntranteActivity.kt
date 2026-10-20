@@ -36,6 +36,7 @@ class LlamadaEntranteActivity : AppCompatActivity() {
     companion object {
         private const val EXTRA_DE_UID = "DE_UID"
         private const val EXTRA_DE_NOMBRE = "DE_NOMBRE"
+        // "sala" lleva el callId de la videollamada (videollamadas/{callId})
         private const val EXTRA_SALA = "SALA"
         private const val EXTRA_TIMESTAMP = "TIMESTAMP"
 
@@ -54,8 +55,9 @@ class LlamadaEntranteActivity : AppCompatActivity() {
 
     private lateinit var miUid: String
     private lateinit var sala: String
+    private var deUid = ""
+    private var deNombre = ""
     private var timestamp = 0L
-    private var miNombre = ""
     private var respondida = false
 
     private var tono: Ringtone? = null
@@ -95,10 +97,9 @@ class LlamadaEntranteActivity : AppCompatActivity() {
             return
         }
         miUid = uid
-        miNombre = FirebaseAuth.getInstance().currentUser?.email?.substringBefore('@') ?: "Usuario"
 
-        val deUid = intent.getStringExtra(EXTRA_DE_UID) ?: ""
-        val deNombre = intent.getStringExtra(EXTRA_DE_NOMBRE).orEmpty().ifBlank { "Usuario" }
+        deUid = intent.getStringExtra(EXTRA_DE_UID) ?: ""
+        deNombre = intent.getStringExtra(EXTRA_DE_NOMBRE).orEmpty().ifBlank { "Usuario" }
         sala = intent.getStringExtra(EXTRA_SALA) ?: ""
         timestamp = intent.getLongExtra(EXTRA_TIMESTAMP, 0L)
 
@@ -108,15 +109,12 @@ class LlamadaEntranteActivity : AppCompatActivity() {
         Avatar.mostrar(tvAvatar, ivAvatar, deNombre, "", colorear = false)
 
         val db = FirebaseFirestore.getInstance()
-        // Foto de quien llama y nuestro propio nombre para entrar a la sala
+        // Foto de quien llama
         if (deUid.isNotEmpty()) {
             db.collection("usuarios").document(deUid).get().addOnSuccessListener { doc ->
                 val usuario = Usuario.desde(doc)
                 Avatar.mostrar(tvAvatar, ivAvatar, deNombre, usuario.foto, colorear = false)
             }
-        }
-        db.collection("usuarios").document(miUid).get().addOnSuccessListener { doc ->
-            miNombre = Usuario.desde(doc).nombreVisible
         }
 
         // Si quien llama cuelga antes de que contestemos, cerramos esta pantalla
@@ -159,7 +157,8 @@ class LlamadaEntranteActivity : AppCompatActivity() {
         respondida = true
         detenerTimbre()
         Videollamada.responder(miUid, Videollamada.ACEPTADA)
-        Videollamada.abrir(this, sala, miNombre)
+        // La pantalla de llamada lee la oferta de quien llama y le manda nuestra respuesta
+        startActivity(LlamadaActivity.intentContestar(this, sala, deUid, deNombre))
         finish()
     }
 

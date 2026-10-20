@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/raiz"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_gradient_brand">
+
+    <!-- Video del otro a pantalla completa. Invisible hasta conectar: así, mientras tanto,
+         se ve el degradado con el avatar en vez de un cuadro negro -->
+    <org.webrtc.SurfaceViewRenderer
+        android:id="@+id/vistaRemota"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="invisible" />
+
+    <!-- Avatar del otro mientras llama o conecta, con el mismo aro de la llamada entrante -->
+    <FrameLayout
+        android:id="@+id/aro"
+        android:layout_width="184dp"
+        android:layout_height="184dp"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_avatar_ring">
+
+        <TextView
+            android:id="@+id/tvAvatarLlamada"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_circle_glass"
+            android:gravity="center"
+            android:text="U"
+            android:textColor="@color/on_brand"
+            android:textSize="56sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/ivAvatarLlamada"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_gravity="center"
+            android:background="@drawable/circle_avatar"
+            android:clipToOutline="true"
+            android:contentDescription="@string/cd_profile_photo"
+            android:scaleType="centerCrop"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <!-- Barra superior: nombre y estado a la izquierda, nuestra cámara a la derecha -->
+    <FrameLayout
+        android:id="@+id/barraSuperior"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:paddingStart="20dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="24dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="124dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvNombreLlamada"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textAppearance="@style/TextAppearance.AppLaboratorio.Headline"
+                android:textColor="@color/on_brand"
+                android:textSize="24sp" />
+
+            <TextView
+                android:id="@+id/tvEstadoLlamada"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:fontFeatureSettings="tnum"
+                android:text="@string/call_connecting"
+                android:textColor="@color/on_brand_muted"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <!-- Ventanita con nuestra cámara (en espejo si es la frontal) -->
+        <FrameLayout
+            android:id="@+id/marcoLocal"
+            android:layout_width="108dp"
+            android:layout_height="144dp"
+            android:layout_gravity="top|end"
+            android:background="@drawable/bg_local_preview"
+            android:padding="2dp">
+
+            <org.webrtc.SurfaceViewRenderer
+                android:id="@+id/vistaLocal"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </FrameLayout>
+    </FrameLayout>
+
+    <!-- Controles: micrófono, cámara, cambiar cámara y colgar -->
+    <LinearLayout
+        android:id="@+id/barraControles"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingTop="40dp"
+        android:paddingBottom="32dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMicrofono"
+            style="@style/Widget.Material3.Button.IconButton.Filled"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_marginHorizontal="8dp"
+            android:contentDescription="@string/cd_mic_mute"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            app:backgroundTint="@color/glass_white"
+            app:cornerRadius="30dp"
+            app:icon="@drawable/ic_mic"
+            app:iconSize="28dp"
+            app:iconTint="@color/white" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCamara"
+            style="@style/Widget.Material3.Button.IconButton.Filled"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_marginHorizontal="8dp"
+            android:contentDescription="@string/cd_camera_off"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            app:backgroundTint="@color/glass_white"
+            app:cornerRadius="30dp"
+            app:icon="@drawable/ic_videocam"
+            app:iconSize="28dp"
+            app:iconTint="@color/white" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCambiarCamara"
+            style="@style/Widget.Material3.Button.IconButton.Filled"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_marginHorizontal="8dp"
+            android:contentDescription="@string/cd_switch_camera"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            app:backgroundTint="@color/glass_white"
+            app:cornerRadius="30dp"
+            app:icon="@drawable/ic_cameraswitch"
+            app:iconSize="28dp"
+            app:iconTint="@color/white" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnColgar"
+            style="@style/Widget.Material3.Button.IconButton.Filled"
+            android:layout_width="68dp"
+            android:layout_height="68dp"
+            android:layout_marginHorizontal="8dp"
+            android:contentDescription="@string/cd_hang_up"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            app:backgroundTint="@color/call_reject"
+            app:cornerRadius="34dp"
+            app:icon="@drawable/ic_call_end"
+            app:iconSize="32dp"
+            app:iconTint="@color/white" />
+    </LinearLayout>
+
+</FrameLayout>
