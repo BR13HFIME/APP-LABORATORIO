@@ -35,7 +35,11 @@ service cloud.firestore {
       }
 
       // Resumen para la lista de conversaciones: { participantes, ultimoMensaje, ... }
-      allow read, create, update: if participa();
+      // La lista se pide con where("participantes", "array-contains", miUid): para esa
+      // consulta Firestore necesita la condición sobre "participantes" (no sobre el id).
+      allow read: if participa()
+                  || (conSesion() && request.auth.uid in resource.data.participantes);
+      allow create, update: if participa();
       allow delete: if false;
 
       match /mensajes/{mensajeId} {

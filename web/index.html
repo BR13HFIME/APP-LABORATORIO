@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <title>FAMessage</title>
+  <meta name="description" content="Chatea y haz videollamadas al instante">
+  <meta name="theme-color" content="#EC3B5E">
+
+  <!-- Para instalarla en el iPhone: Compartir → Agregar a pantalla de inicio -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FAMessage">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ============ Iniciar sesión ============ -->
+    <section class="view" id="view-login" hidden>
+      <header class="hero">
+        <button class="btn-glass btn-lang" type="button" data-action="lang">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+          <span data-i18n="btn_change_language"></span>
+        </button>
+        <div class="logo-badge">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zm-3 11H7v-2h10v2zm0-3H7V8h10v2z"/></svg>
+        </div>
+        <h1 class="hero-title" data-i18n="app_name"></h1>
+        <p class="hero-sub" data-i18n="app_tagline"></p>
+      </header>
+
+      <form class="card form-card" id="form-login" novalidate>
+        <h2 data-i18n="sign_in_title"></h2>
+        <p class="muted" data-i18n="sign_in_subtitle"></p>
+
+        <label class="field">
+          <span class="field-label" data-i18n="hint_email"></span>
+          <input type="email" name="email" autocomplete="email" inputmode="email" autocapitalize="off">
+          <small class="field-error"></small>
+        </label>
+        <label class="field">
+          <span class="field-label" data-i18n="hint_password"></span>
+          <input type="password" name="password" autocomplete="current-password">
+          <small class="field-error"></small>
+        </label>
+
+        <button type="button" class="link link-end" data-action="forgot" data-i18n="forgot_password"></button>
+        <button type="submit" class="btn-primary" data-i18n="btn_sign_in"></button>
+      </form>
+
+      <button type="button" class="link link-center" data-goto="signup" data-i18n="go_to_sign_up"></button>
+    </section>
+
+    <!-- ============ Registrarse ============ -->
+    <section class="view" id="view-signup" hidden>
+      <header class="hero">
+        <button class="btn-glass btn-lang" type="button" data-action="lang">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+          <span data-i18n="btn_change_language"></span>
+        </button>
+        <div class="logo-badge">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zm-3 11H7v-2h10v2zm0-3H7V8h10v2z"/></svg>
+        </div>
+        <h1 class="hero-title" data-i18n="app_name"></h1>
+        <p class="hero-sub" data-i18n="app_tagline"></p>
+      </header>
+
+      <form class="card form-card" id="form-signup" novalidate>
+        <h2 data-i18n="sign_up_title"></h2>
+        <p class="muted" data-i18n="sign_up_subtitle"></p>
+
+        <label class="field">
+          <span class="field-label" data-i18n="hint_name"></span>
+          <input type="text" name="nombre" autocomplete="name" maxlength="40" autocapitalize="words">
+          <small class="field-error"></small>
+        </label>
+        <label class="field">
+          <span class="field-label" data-i18n="hint_email"></span>
+          <input type="email" name="email" autocomplete="email" inputmode="email" autocapitalize="off">
+          <small class="field-error"></small>
+        </label>
+        <label class="field">
+          <span class="field-label" data-i18n="hint_password"></span>
+          <input type="password" name="password" autocomplete="new-password">
+          <small class="field-error"></small>
+        </label>
+        <label class="field">
+          <span class="field-label" data-i18n="hint_confirm_password"></span>
+          <input type="password" name="confirm" autocomplete="new-password">
+          <small class="field-error"></small>
+        </label>
+
+        <button type="submit" class="btn-primary" data-i18n="btn_sign_up"></button>
+      </form>
+
+      <button type="button" class="link link-center" data-goto="login" data-i18n="go_to_sign_in"></button>
+    </section>
+
+    <!-- ============ Inicio ============ -->
+    <section class="view" id="view-home" hidden>
+      <header class="hero hero-home">
+        <button class="btn-glass btn-lang" type="button" data-action="lang">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+          <span data-i18n="btn_change_language"></span>
+        </button>
+        <div class="home-user">
+          <button type="button" class="avatar avatar-lg avatar-glass" id="home-avatar" data-goto="perfil"></button>
+          <div class="home-user-text">
+            <h1 class="hero-title" id="home-hello"></h1>
+            <p class="hero-sub" id="home-email"></p>
+          </div>
+        </div>
+        <span class="badge-admin" id="home-admin" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+          <span data-i18n="admin_badge"></span>
+        </span>
+      </header>
+
+      <div class="content">
+        <h3 class="section-title" data-i18n="home_section_title"></h3>
+
+        <button type="button" class="card menu-card" data-goto="chats">
+          <span class="icon-soft"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zm-3 11H7v-2h10v2zm0-3H7V8h10v2z"/></svg></span>
+          <span class="menu-text"><b data-i18n="home_chats_title"></b><small data-i18n="home_chats_desc"></small></span>
+          <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+        </button>
+
+        <button type="button" class="card menu-card" data-goto="chats">
+          <span class="icon-soft icon-violet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 4v-11l-4 4z"/></svg></span>
+          <span class="menu-text"><b data-i18n="home_video_title"></b><small data-i18n="home_video_desc"></small></span>
+          <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+        </button>
+
+        <button type="button" class="card menu-card" data-goto="perfil">
+          <span class="icon-soft"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></span>
+          <span class="menu-text"><b data-i18n="home_profile_title"></b><small data-i18n="home_profile_desc"></small></span>
+          <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+        </button>
+
+        <div class="spacer"></div>
+        <button type="button" class="btn-outline btn-danger" data-action="logout">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+          <span data-i18n="btn_logout"></span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ============ Conversaciones ============ -->
+    <section class="view" id="view-chats" hidden>
+      <header class="hero hero-bar">
+        <button type="button" class="icon-btn" data-goto="home" data-i18n-aria="cd_back">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <div>
+          <h1 class="hero-title" data-i18n="users_title"></h1>
+          <p class="hero-sub" data-i18n="users_subtitle"></p>
+        </div>
+      </header>
+
+      <div class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="search" id="chats-search" data-i18n-placeholder="search_hint" autocomplete="off">
+      </div>
+
+      <div class="list" id="chats-list"></div>
+      <div class="spinner" id="chats-loading"></div>
+      <div class="empty" id="chats-empty" hidden>
+        <span class="icon-soft icon-xl"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></span>
+        <p id="chats-empty-text"></p>
+      </div>
+    </section>
+
+    <!-- ============ Chat ============ -->
+    <section class="view view-chat" id="view-chat" hidden>
+      <header class="chat-bar">
+        <button type="button" class="icon-btn" data-goto="chats" data-i18n-aria="cd_back">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <span class="avatar avatar-sm avatar-glass" id="chat-avatar"></span>
+        <div class="chat-bar-text">
+          <b id="chat-name"></b>
+          <small data-i18n="chat_subtitle"></small>
+        </div>
+        <button type="button" class="icon-btn icon-btn-glass" data-action="call" data-i18n-aria="cd_video_call">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 4v-11l-4 4z"/></svg>
+        </button>
+      </header>
+
+      <div class="messages" id="chat-messages"></div>
+
+      <form class="composer" id="form-message">
+        <textarea id="chat-input" rows="1" data-i18n-placeholder="chat_hint" enterkeyhint="send"></textarea>
+        <button type="submit" class="send-btn" data-i18n-aria="cd_send">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </form>
+    </section>
+
+    <!-- ============ Mi perfil ============ -->
+    <section class="view" id="view-perfil" hidden>
+      <header class="hero hero-profile">
+        <div class="hero-bar-row">
+          <button type="button" class="icon-btn" data-goto="home" data-i18n-aria="cd_back">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          </button>
+          <div>
+            <h1 class="hero-title" data-i18n="profile_title"></h1>
+            <p class="hero-sub" data-i18n="profile_subtitle"></p>
+          </div>
+        </div>
+        <div class="profile-photo">
+          <span class="avatar avatar-xl avatar-glass" id="perfil-avatar"></span>
+          <button type="button" class="camera-btn" data-action="pick-photo" data-i18n-aria="profile_change_photo">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <form class="card form-card" id="form-perfil" novalidate>
+        <label class="field">
+          <span class="field-label" data-i18n="hint_name"></span>
+          <input type="text" name="nombre" maxlength="40" autocapitalize="words">
+          <small class="field-error"></small>
+        </label>
+        <label class="field">
+          <span class="field-label" data-i18n="hint_email"></span>
+          <input type="email" name="email" disabled>
+        </label>
+        <input type="file" id="perfil-file" accept="image/*" hidden>
+        <button type="button" class="btn-outline" data-action="pick-photo" data-i18n="profile_change_photo"></button>
+        <button type="button" class="link link-center link-danger" id="perfil-remove" data-action="remove-photo" data-i18n="profile_remove_photo" hidden></button>
+        <button type="submit" class="btn-primary" data-i18n="profile_save"></button>
+      </form>
+    </section>
+
+    <!-- Pantalla de carga inicial -->
+    <section class="view view-splash" id="view-splash">
+      <div class="logo-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zm-3 11H7v-2h10v2zm0-3H7V8h10v2z"/></svg></div>
+    </section>
+  </div>
+
+  <!-- ============ Llamada entrante ============ -->
+  <div class="overlay incoming" id="incoming" hidden>
+    <p class="incoming-label">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 4v-11l-4 4z"/></svg>
+      <span data-i18n="incoming_call"></span>
+    </p>
+    <div class="incoming-ring"><span class="avatar avatar-huge avatar-glass" id="incoming-avatar"></span></div>
+    <h2 id="incoming-name"></h2>
+    <p class="hero-sub" data-i18n="app_name"></p>
+    <div class="incoming-actions">
+      <div>
+        <button type="button" class="round-btn round-reject" data-action="reject" data-i18n-aria="incoming_reject">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08a.956.956 0 010-1.41C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28a11.27 11.27 0 00-2.67-1.85.996.996 0 01-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>
+        </button>
+        <span data-i18n="incoming_reject"></span>
+      </div>
+      <div>
+        <button type="button" class="round-btn round-accept" data-action="accept" data-i18n-aria="incoming_accept">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 4v-11l-4 4z"/></svg>
+        </button>
+        <span data-i18n="incoming_accept"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Videollamada (Jitsi) ============ -->
+  <div class="overlay call" id="call" hidden>
+    <div class="call-bar">
+      <span id="call-title"></span>
+      <a id="call-external" target="_blank" rel="noopener" data-i18n="call_open_browser"></a>
+      <button type="button" class="round-btn round-reject round-sm" data-action="hangup" data-i18n-aria="call_hangup">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08a.956.956 0 010-1.41C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28a11.27 11.27 0 00-2.67-1.85.996.996 0 01-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>
+      </button>
+    </div>
+    <div class="call-frame" id="call-frame"></div>
+  </div>
+
+  <!-- ============ Recuperar contraseña ============ -->
+  <dialog id="dialog-reset">
+    <form method="dialog" id="form-reset" novalidate>
+      <h3 data-i18n="reset_title"></h3>
+      <p class="muted" data-i18n="reset_message"></p>
+      <label class="field">
+        <span class="field-label" data-i18n="hint_email"></span>
+        <input type="email" name="email" inputmode="email" autocapitalize="off">
+        <small class="field-error"></small>
+      </label>
+      <div class="dialog-actions">
+        <button type="button" class="link" data-action="close-reset" data-i18n="cancel"></button>
+        <button type="submit" class="btn-primary btn-sm" data-i18n="reset_send"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Aviso para activar el timbre (los navegadores exigen un toque antes de sonar) -->
+  <button type="button" class="sound-chip" id="sound-chip" hidden data-i18n="sound_enable"></button>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
