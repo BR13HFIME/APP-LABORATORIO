@@ -58,6 +58,24 @@ service cloud.firestore {
       }
     }
 
+    // Señalización de la videollamada propia (WebRTC). El id es "<uidMenor>_<uidMayor>_<timestamp>".
+    // Aquí solo viajan la oferta/respuesta y los candidatos de conexión: el audio y el video van
+    // directo entre los dos dispositivos, cifrados, y nunca pasan por Firebase.
+    match /videollamadas/{callId} {
+      function enLlamada() {
+        return conSesion() && request.auth.uid in callId.split('_');
+      }
+
+      allow read, create, update: if enLlamada();
+      allow delete: if false;
+
+      // candidatos_de (quien llama) y candidatos_para (quien recibe)
+      match /{lado}/{candidatoId} {
+        allow read, create: if enLlamada();
+        allow update, delete: if false;
+      }
+    }
+
     // Aviso de videollamada entrante. El id del documento es el uid de quien recibe.
     match /llamadas/{uid} {
       allow read: if conSesion()
