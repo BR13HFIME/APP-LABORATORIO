@@ -98,6 +98,7 @@ class SignUpActivity : AppCompatActivity() {
                             .set(userData)
                     }
 
+                    auth.setLanguageCode(LocaleHelper.getSavedLanguage(this))
                     user?.sendEmailVerification()
                     Toast.makeText(this, R.string.sign_up_success, Toast.LENGTH_LONG).show()
 

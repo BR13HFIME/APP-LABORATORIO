@@ -61,7 +61,7 @@
     <string name="reset_title">Reset password</string>
     <string name="reset_message">We will email you a link to create a new password.</string>
     <string name="reset_send">Send link</string>
-    <string name="reset_sent">Done. Check your inbox (and the spam folder)</string>
+    <string name="reset_sent">If that email has an account, a link will arrive in a few minutes. Check Spam too</string>
     <string name="cancel">Cancel</string>
 
     <!-- Home -->

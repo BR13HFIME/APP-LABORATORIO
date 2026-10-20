@@ -60,7 +60,7 @@
     <string name="reset_title">Recuperar contraseña</string>
     <string name="reset_message">Te enviaremos un enlace a tu correo para crear una nueva contraseña.</string>
     <string name="reset_send">Enviar enlace</string>
-    <string name="reset_sent">Listo. Revisa tu correo (también la carpeta de spam)</string>
+    <string name="reset_sent">Si ese correo tiene cuenta, te llegará un enlace en unos minutos. Revisa también Spam o Promociones</string>
     <string name="cancel">Cancelar</string>
 
     <!-- Inicio -->

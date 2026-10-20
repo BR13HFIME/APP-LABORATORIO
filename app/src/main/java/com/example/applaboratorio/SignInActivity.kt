@@ -130,6 +130,8 @@ class SignInActivity : AppCompatActivity() {
                 campo.error = getString(R.string.error_email_invalid)
                 return@setOnClickListener
             }
+            // El correo de Firebase llega en el idioma de la app
+            auth.setLanguageCode(LocaleHelper.getSavedLanguage(this))
             auth.sendPasswordResetEmail(email)
                 .addOnSuccessListener {
                     Toast.makeText(this, R.string.reset_sent, Toast.LENGTH_LONG).show()

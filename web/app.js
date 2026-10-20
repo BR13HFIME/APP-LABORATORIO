@@ -161,6 +161,11 @@ function mostrarRuta() {
   if (!["login", "signup", "home", "chats", "chat", "perfil"].includes(vista)) vista = conSesion ? "home" : "login";
   if (vista === "chat" && !parametro) vista = "chats";
 
+  // Si redirigimos (p. ej. de #signup a #home al registrarse), la dirección también cambia;
+  // si no, al cerrar sesión volveríamos a la pantalla de registro en vez de a la de inicio
+  const destino = vista === "chat" ? `#chat/${parametro}` : `#${vista}`;
+  if (location.hash !== destino) history.replaceState(null, "", destino);
+
   // Al cambiar de pantalla soltamos sus listeners
   estado.limpiezaVista.forEach((fn) => fn());
   estado.limpiezaVista = [];
@@ -239,6 +244,7 @@ $("#form-signup").addEventListener("submit", async (e) => {
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await setDoc(doc(db, "usuarios", cred.user.uid), { email, nombre, rol: "usuario" });
+    auth.languageCode = idioma();   // el correo de Firebase llega en el idioma de la app
     sendEmailVerification(cred.user).catch(() => {});
     form.reset();
     toast(t("sign_up_success"), 4000);
@@ -266,6 +272,7 @@ formReset.addEventListener("submit", async (e) => {
   if (!correoValido(email)) return marcarError(formReset, "email", "error_email_invalid");
   dialogoReset.close();
   try {
+    auth.languageCode = idioma();   // el correo de Firebase llega en el idioma de la app
     await sendPasswordResetEmail(auth, email);
     toast(t("reset_sent"), 4000);
   } catch (error) {
